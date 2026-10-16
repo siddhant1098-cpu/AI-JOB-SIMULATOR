@@ -1,155 +1,216 @@
 ================================================================================
           AI JOB SIMULATOR — 8-MINUTE PRESENTATION SCRIPT (4 SPEAKERS)
+         With Individual Technical Allocations from the Tech Stack
 ================================================================================
 
 Total Time: 8 Minutes (2 Minutes per speaker)
-Tone: Professional, confident, clear, and easy to memorize.
-Note: [Slide X] tells you when to advance the slide. [Action] tells you what to show.
+Tone: Confident, clear, technically impressive, and easy to memorize.
+Format: 
+- [Slide X] = When to advance slide in PowerPoint
+- [Action]  = What to click or show on screen
+- [Tech Focus] = The specific technologies assigned to this speaker
 
 --------------------------------------------------------------------------------
-SPEAKER 1: THE HOOK, PROBLEM & OUR SOLUTION (0:00 – 2:00)
+SPEAKER 1: THE HOOK, PROBLEM, SOLUTION & FRONTEND ARCHITECTURE (0:00 – 2:00)
 --------------------------------------------------------------------------------
+
+[Tech Focus for Speaker 1: React 19, Vite v8, Tailwind CSS v4, Plus Jakarta Sans]
 
 [Slide 1: Title Slide — AI Job Simulator]
 "Good morning everyone! Have you ever walked out of a job interview or workplace 
 test feeling like you were judged by a rigid, cold checklist that didn't capture 
-how you actually think or communicate? 
+how you actually think, communicate, or handle pressure?
 
-Traditional assessments today have two major problems:
-First, they feel robotic. Candidates are bombarded with multiple-choice questions 
-or overly harsh AI grading that penalizes everyday spoken language and common sense.
-Second, online assessments struggle with integrity — remote candidates often rely 
-on mobile phones or copy-paste shortcuts behind the screen.
+Traditional technical and workplace assessments today suffer from two critical flaws:
+First, they feel robotic. Candidates are tested through static multiple-choice 
+quizzes or overly harsh AI grading that penalizes everyday spoken language and 
+real-world common sense.
+Second, remote assessments face severe integrity challenges — candidates frequently 
+turn to mobile phones or copy-pasting solutions behind the camera.
 
 [Slide 2: The Vision & Solution]
-To solve this, our team built the AI Job Simulator — a human-centered, real-time 
-simulation platform where candidates practice both realistic job interviews and 
-workplace crisis scenarios.
+To solve this, our team engineered the AI Job Simulator — a human-centered, 
+real-time simulation platform where candidates engage in authentic conversational 
+interviews and dynamic workplace crisis scenarios.
 
-Our simulator is built around three core pillars:
-1. Natural Conversational Experience: Instead of reading text off a screen, candidates 
-   listen to a natural human voice and speak their answers naturally.
-2. Empathetic Mentorship: Our grading respects practical human thinking and composure, 
-   offering constructive coaching rather than harsh criticism.
-3. On-Device Strict Proctoring: We built an anti-cheat engine directly inside the browser 
-   that detects mobile phones and blocks copy-paste shortcuts — without invading 
-   privacy or storing video feeds in the cloud.
+Our platform is founded on three distinct pillars:
+1. Natural Spoken Dialogue: Candidates listen to an authentic voice and reply 
+   naturally through speech, exactly like a real workplace conversation.
+2. Empathetic Mentorship: Our evaluation engine values practical initiative, 
+   calm judgment, and problem-solving, offering encouraging coaching rather 
+   than harsh penalties.
+3. 100% On-Device Anti-Cheat: A zero-cloud computer vision engine that detects 
+   smartphones and enforces clipboard security right inside the browser.
 
-Now, my teammate will explain how we engineered this under the hood."
+To bring this vision to life, I led the Frontend Architecture:
+- We built the client with React 19, structuring the app as a modular state machine 
+  transitioning smoothly across setup, active simulation, real-time feedback, and 
+  the final report without disruptive page reloads.
+- We paired React with Vite v8 as our build engine, giving us sub-second Hot Module 
+  Replacement and a built-in reverse proxy that routes frontend API calls directly 
+  to our backend without CORS issues.
+- For styling, we utilized Tailwind CSS v4 to design a custom Minimal Pastel theme. 
+  By combining soft alabaster backgrounds (#FAF8F5), delicate lavender and sage tones, 
+  and Plus Jakarta Sans typography, our UI actively lowers candidate anxiety and 
+  creates a calm, premium assessment atmosphere.
+
+Now, I'll pass it over to my teammate to explain our Backend, AI, and Speech pipeline!"
 
 [CUE: Hand over to Speaker 2]
 
 --------------------------------------------------------------------------------
-SPEAKER 2: ARCHITECTURE, TECH STACK & AI ENGINE (2:00 – 4:00)
+SPEAKER 2: BACKEND ARCHITECTURE, AI REASONING & CONVERSATIONAL SPEECH (2:00 – 4:00)
 --------------------------------------------------------------------------------
 
-[Slide 3: System Architecture & Tech Stack]
-"Thank you! Let's take a look at the technical architecture that powers our simulator.
+[Tech Focus for Speaker 2: FastAPI, Uvicorn, Pydantic v2, Google Gemini 3.5 Flash, 
+                          Dual-Model Fallback, json-repair, Web Speech API]
 
-We designed a lightweight, high-performance stack with zero database complexity:
-- On the Frontend, we use React 19 and Vite with Tailwind CSS v4. We designed a 
-  minimalist, pastel-themed interface using soft alabaster and sage tones to reduce 
-  candidate anxiety and create a premium, calm environment.
-- On the Backend, we built an asynchronous REST API using Python and FastAPI, 
-  powered by Pydantic v2 schemas for strict contract validation.
+[Slide 3: System Architecture & Tech Stack]
+"Thank you! Behind our calming pastel frontend lies a high-throughput, asynchronous 
+backend engineered for speed, resilience, and natural conversation.
+
+Let's examine the core backend and intelligence layer:
+- We developed our REST API using Python and FastAPI, running on the asynchronous 
+  Uvicorn ASGI server. FastAPI was chosen for its high concurrency and native 
+  integration with Pydantic v2, which strictly validates all candidate configuration, 
+  question payloads, and evaluation schemas at the network boundary.
 
 [Slide 4: Conversational AI & Empathetic Grading]
-The core intelligence runs on Google Gemini 3.5 Flash through the Google AI Studio API. 
-We selected Gemini Flash because it delivers sub-second response times, allowing 
-realistic scenarios to be generated and scored on the fly. 
+The core intelligence driving our simulator is Google Gemini 3.5 Flash via the 
+Google AI Studio API. We chose Gemini Flash because of its sub-second token latency, 
+enabling the platform to generate unique, role-specific workplace challenges and 
+evaluate spoken answers on the fly.
 
-To ensure zero downtime during high traffic, we implemented an automatic failover 
-mechanism: if the primary model hits any latency, it instantly switches to 
-gemini-3.5-flash-lite. We also integrated `json-repair` to dynamically sanitize 
-all JSON responses, eliminating parsing errors.
+To guarantee 100% platform reliability, we implemented two critical fault-tolerant 
+mechanisms:
+1. Dual-Model Auto-Failover: If the primary Gemini 3.5 Flash model experiences any 
+   free-tier rate limiting or network congestion, our backend automatically fails over 
+   to gemini-3.5-flash-lite in milliseconds, ensuring the candidate never sees a crash.
+2. AST Syntax Healing with json-repair: Large language models occasionally produce 
+   unescaped quotation marks when generating realistic workplace dialogue. We integrated 
+   the `json-repair` library in our parsing pipeline to automatically heal and sanitize 
+   JSON responses in memory before they reach the client.
 
-For speech, we tapped into the browser's native Web Speech API:
-- Our Text-to-Speech engine automatically selects high-fidelity natural human voices 
-  and speaks at a comfortable 0.95x cadence, so the simulator feels like a supportive 
-  colleague having a conversation over coffee.
-- Our Speech-to-Text transcribes the candidate's words in real-time, displaying a 
-  live editable preview so any speech recognition quirks can be polished before submission.
+For the conversational audio experience, we harnessed the browser's native Web Speech API:
+- Our Text-to-Speech engine uses `SpeechSynthesis`, custom-tuned to a relaxed 0.95x 
+  speaking cadence. We programmed it to auto-detect and select the highest-fidelity 
+  human voices available — like Microsoft Natural Online or Google US English — so 
+  it sounds like a warm, supportive colleague having coffee with you.
+- On the input side, our Speech-to-Text engine uses `webkitSpeechRecognition` to transcribe 
+  the candidate's answer continuously in real-time, displaying a live editable text area 
+  so candidates can correct any microphone transcription quirks before submitting.
 
-Now, my teammate will walk you through a live demonstration of the simulator in action!"
+Now, my teammate will demonstrate the simulator and our on-device vision proctor live!"
 
 [CUE: Hand over to Speaker 3]
 
 --------------------------------------------------------------------------------
-SPEAKER 3: LIVE DEMO & REAL-TIME PROCTORING (4:00 – 6:00)
+SPEAKER 3: LIVE DEMO, COMPUTER VISION & ON-DEVICE ANTI-CHEAT (4:00 – 6:00)
 --------------------------------------------------------------------------------
+
+[Tech Focus for Speaker 3: MediaPipe Tasks Vision (WASM), MediaPipe BlazeFace, 
+                          MediaPipe EfficientDet-Lite0, HTML5 Canvas Luminance, 
+                          DOM Event & Clipboard Security]
 
 [Slide 5: Live Demonstration & Strict Proctoring]
 [Action: Open http://localhost:5173 on screen]
-"Thanks! Let's see the simulator in action.
+"Thanks! Let's see the AI Job Simulator live in action.
 
-Here on our setup screen, a candidate can select any domain — like Event Management, 
-Software Engineering, or Operations — choose their company size, and pick between 
-an Interview or a Workplace Scenario. Notice our 'Strict Anti-Cheat Proctor' toggle. 
-Let's start the simulation!
+Here on our setup screen, a candidate can select any domain — such as Event Management 
+or Software Engineering — choose their company type, and pick between an Interview or 
+a Workplace Challenge. Notice our 'Strict Anti-Cheat Proctor' toggle. Let's start!
 
-[Action: Click 'Start Assessment'. The question card appears and TTS reads aloud.]
-Notice how the question is read aloud in a warm, human tone. The candidate doesn't 
-feel like they're taking an exam; they feel like they're talking to a colleague.
+[Action: Click 'Start Assessment'. Question card appears and TTS reads aloud.]
+Notice how the question is read aloud with natural conversational phrasing: 
+'Hello! Let's start with our first scenario...' The candidate is invited into an authentic 
+conversation rather than an intimidating test.
 
-Now, let's talk about our proctoring innovations:
+Now, let's explore our breakthrough feature: On-Device Strict Proctoring.
 [Action: Try selecting or right-clicking text, or press Ctrl+C]
-First: Notice that text selection and right-click are completely blocked. If I press 
-Ctrl+C or attempt to paste into the answer box, an instant red warning appears: 
-'Pasting is prohibited in Strict Mode.'
+First — Clipboard and Text Security:
+Notice that text selection is completely disabled. If I try to right-click or press 
+Ctrl+C, a red warning toast pops up: 'Keyboard shortcut [Ctrl+C] is disabled.' 
+If I attempt to paste an external answer into the response field, our DOM listeners 
+suppress the event immediately and log a clipboard violation flag.
 
-Second: Tab-switching detection. If a candidate attempts to switch to another tab 
-to Google the answer, the screen instantly blurs and logs a timestamped violation.
+Second — Tab-Switch Monitoring:
+If a candidate tries to navigate to another tab to Google the answer, our 
+`document.visibilitychange` listener instantly triggers a blurred overlay and logs 
+a timestamped event.
 
-Third — and most exciting — is our AI Mobile Phone Detection:
-[Action: Hold up your smartphone in front of the camera]
-Look at the camera preview in the bottom corner. As soon as I hold up my mobile phone, 
-the system identifies it as a handheld device, the screen immediately blurs with 
-'Mobile Device Detected!', and the assessment timer pauses! 
+Third — and our proudest engineering achievement — AI Mobile Phone Detection:
+[Action: Hold up your smartphone in front of the webcam]
+Look at the camera preview in the bottom corner. The moment my mobile phone enters 
+the camera frame, the badge flashes '📱 PHONE!', the screen immediately freezes with a 
+heavy 25px blur overlay, and the timer pauses!
 
-[Action: Put the phone down away from camera]
-The moment the phone is put away, the screen unblurs automatically! 
+[Action: Put the smartphone down away from camera]
+As soon as the phone is put away, the overlay clears and the test resumes seamlessly!
 
-What makes this technically remarkable is that this entire vision pipeline is powered 
-by Google's MediaPipe Tasks Vision running on-device using WebAssembly and WebGL. 
-We run BlazeFace for face tracking and EfficientDet-Lite0 for object detection. 
-Not a single frame of video is sent to the cloud, guaranteeing complete user privacy.
+Here is the technical magic:
+This entire computer vision system is powered by Google's MediaPipe Tasks Vision, 
+running 100% on the client device through WebAssembly and WebGL:
+- For facial verification, we run MediaPipe BlazeFace every 500 milliseconds, checking 
+  bounding boxes to verify single-candidate presence and flag turned-away faces.
+- For mobile detection, we run MediaPipe EfficientDet-Lite0, an on-device object 
+  detection neural network trained on the COCO dataset that identifies handheld devices.
+- For physical camera tampering, a background HTML5 Canvas analyzes pixel luminance to 
+  catch covered lenses.
+Most importantly: Not a single video frame is ever recorded or uploaded to the cloud, 
+giving candidates complete biometric privacy while giving employers total exam integrity!
 
-Now, my teammate will show you the final debrief and our future roadmap."
+Now, my teammate will walk you through our final debrief and architecture highlights."
 
 [CUE: Hand over to Speaker 4]
 
 --------------------------------------------------------------------------------
-SPEAKER 4: FINAL DEBRIEF, ARCHITECTURE & ROADMAP (6:00 – 8:00)
+SPEAKER 4: VISUAL ANALYTICS, ZERO-DATABASE ARCHITECTURE & ROADMAP (6:00 – 8:00)
 --------------------------------------------------------------------------------
 
+[Tech Focus for Speaker 4: Recharts Data Visualization, Deterministic Rubric Engine, 
+                          Browser localStorage State Recovery, 1-Click start.bat]
+
 [Slide 6: Performance Report & Proctor Audit]
-"Thank you! Once the candidate finishes their simulation, they receive this comprehensive, 
+"Thank you! Once the candidate finishes the simulation, they receive this comprehensive, 
 encouraging Performance Debrief.
 
-Notice the key features here:
-1. Balanced Scoring: Candidates are marked on Practical Solution (40%), Problem 
-   Solving (30%), and Communication (30%). Our prompts evaluate practical common sense 
-   and empathy, giving candidates realistic, supportive scores rather than harsh penalties.
-2. Visual Analytics: Powered by Recharts, our interactive Radar and Bar charts help 
-   candidates visually understand their competencies at a glance.
-3. Mentorship Insights: Instead of generic scores, the candidate receives 3 specific 
-   strengths and 3 actionable development steps.
-4. Proctor Audit Log: In the proctor card, interviewers can see a categorized breakdown 
-   of all events — mobile phone detections, clipboard locks, and tab switches — giving 
-   recruiters complete confidence in the integrity of the test.
+Let's look at the data analytics and scoring architecture:
+1. Deterministic Weighted Rubric: We score every answer across Practical Solution (40%), 
+   Problem Solving (30%), and Communication (30%). Crucially, the weighted total is 
+   computed in deterministic code rather than LLM approximation, guaranteeing mathematical 
+   precision.
+2. Interactive Visualizations with Recharts: We integrated Recharts to render an interactive 
+   SVG Competency Radar Chart and Performance Bar Chart, allowing candidates to visualize 
+   their strengths across all three dimensions at a glance.
+3. Empathetic Coaching Debrief: Rather than cold percentages, the report delivers 3 authentic 
+   strengths, 2 gentle growth areas, and 3 actionable development steps.
+4. Proctor Audit Trail: Interviewers receive a transparent breakdown of all proctor observations — 
+   displaying exact counts of Mobile Phone detections, Clipboard lock attempts, Tab switches, 
+   and Face checks, accompanied by a 'Verified Clean' badge.
 
 [Slide 7: Zero-Database Architecture & Scalability]
-From an engineering standpoint, we eliminated database overhead completely:
-- The entire session state, questions, transcripts, and integrity logs persist in the 
-  browser's localStorage with timestamp recovery. If a candidate's browser refreshes, 
-  they can resume right where they left off.
-- To make sharing effortless, we created an automated 1-click startup script that 
-  auto-installs npm and pip dependencies on any machine.
+From an infrastructure standpoint, we solved deployment complexity with two innovations:
+- Stateless Backend & localStorage Persistence: We deliberately eliminated database 
+  overhead. The entire simulation state, question sets, speech transcripts, and audit logs 
+  persist in browser `localStorage`. If a candidate accidentally reloads their browser, 
+  our timestamp-recovery engine presents a 1-click 'Resume Session' screen, seamlessly 
+  restoring the interview without data loss.
+- 1-Click Plug-and-Play Deployment (`start.bat`): To make sharing frictionless, we built an 
+  automated launcher script. When cloned on any new computer, it automatically verifies 
+  Python and Node.js environments, installs missing npm and pip packages, creates the .env 
+  configuration, and boots both servers in one click.
 
 [Slide 8: Conclusion & Future Roadmap]
-Looking ahead, our roadmap includes:
-- Company-specific custom knowledge bases so organizations can simulate their exact workplace tools.
-- Multilingual simulation support for global recruiting.
-- Seamless integrations with ATS platforms like Greenhouse and Workday.
+Looking toward the future, our roadmap includes:
+- Organization-specific knowledge base integration for custom workplace crisis simulations.
+- Real-time multilingual simulation support for international recruitment.
+- Enterprise ATS webhook integrations with platforms like Greenhouse and Workday.
 
-Thank you so much for your time today! We are now open for any questions."
+The AI Job Simulator proves that technical assessments can be rigorous and secure 
+without sacrificing human empathy and privacy.
+
+Thank you so much! We are now excited to answer any questions."
+
+================================================================================
+                                END OF SCRIPT
+================================================================================
