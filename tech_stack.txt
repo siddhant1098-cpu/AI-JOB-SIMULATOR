@@ -1,0 +1,171 @@
+================================================================================
+           AI JOB SIMULATOR — COMPLETE TECHNOLOGY STACK & EXPLANATIONS
+================================================================================
+
+This document gives you a clear, easy-to-understand explanation of every 
+technology used in the project. You can use these exact explanations when 
+speaking to judges, evaluators, or in your presentation.
+
+--------------------------------------------------------------------------------
+1. FRONTEND TECHNOLOGIES
+--------------------------------------------------------------------------------
+
+• React (v19)
+  - What it is: A modern JavaScript UI library for building user interfaces.
+  - Why we used it: It allows us to manage dynamic states seamlessly — transitioning 
+    between the setup form, the live audio exam runner, instant feedback cards, 
+    and the final report without page reloads.
+  - How to explain it: "We built the user interface with React, organizing the app 
+    into modular components like the QuestionRunner, FeedbackCard, and CameraPreview."
+
+• Vite (v8)
+  - What it is: A next-generation frontend build tool and local development server.
+  - Why we used it: Extremely fast startup and Hot Module Replacement (HMR), 
+    allowing instant updates during development and lightweight production bundles.
+  - How to explain it: "Vite provides lightning-fast bundling and handles the local 
+    API proxy between our React frontend and FastAPI backend."
+
+• Tailwind CSS (v4)
+  - What it is: A utility-first CSS framework for modern, responsive styling.
+  - Why we used it: We crafted a custom, minimal pastel theme (soft alabaster canvas, 
+    frosted glass cards, delicate lavender and sage accents) that feels calm, 
+    professional, and premium.
+  - How to explain it: "Tailwind allowed us to build an elegant, pastel-themed UI 
+    with smooth micro-animations and responsive layouts."
+
+• Recharts
+  - What it is: A composable React charting library built on SVG elements.
+  - Why we used it: Powers the interactive Radar Chart (Solution Quality, Problem 
+    Solving, Communication) and the Performance Bar Chart in the final debrief.
+  - How to explain it: "In the report, Recharts visualizes candidate strengths across 
+    multiple competency dimensions through custom radar and bar charts."
+
+--------------------------------------------------------------------------------
+2. ARTIFICIAL INTELLIGENCE & LLM ENGINE
+--------------------------------------------------------------------------------
+
+• Google Gemini 3.5 Flash (via Google AI Studio API)
+  - What it is: Google's state-of-the-art multimodal AI model.
+  - Why we used it: Generates realistic workplace scenarios and evaluates 
+    spoken answers in real-time with empathetic, constructive human coaching.
+  - How to explain it: "We use Google Gemini 3.5 Flash because it combines 
+    sub-second latency with high reasoning capability, allowing our simulator 
+    to craft custom scenarios on the fly."
+
+• Dual-Model Resilience (Gemini 3.5 Flash + Flash-Lite Fallback)
+  - What it is: An automatic failover mechanism built into our backend.
+  - Why we used it: If the primary model experiences network congestion or 
+    rate-limiting, the backend instantly falls back to gemini-3.5-flash-lite, 
+    guaranteeing 100% uptime during live demos.
+  - How to explain it: "Our backend incorporates an automatic fallback between 
+    Gemini Flash models so the user never encounters rate limit downtime."
+
+• json-repair (Python Library)
+  - What it is: An intelligent parser that repairs broken JSON syntax.
+  - Why we used it: Large Language Models sometimes output unescaped quotation 
+    marks or trailing commas. `json-repair` intercepts and repairs these in memory.
+  - How to explain it: "LLMs can occasionally output unescaped quotes in scenarios. 
+    `json-repair` automatically sanitizes the JSON response before sending it to 
+    the frontend."
+
+--------------------------------------------------------------------------------
+3. COMPUTER VISION & ON-DEVICE PROCTORING (ANTI-CHEAT)
+--------------------------------------------------------------------------------
+
+• MediaPipe Tasks Vision (@mediapipe/tasks-vision)
+  - What it is: Google's suite of machine learning models that execute directly 
+    inside the web browser using WebAssembly (WASM) and WebGPU/WebGL.
+  - Why we used it: 100% privacy-friendly on-device inference — zero webcam video 
+    is ever sent to an external server or stored in the cloud.
+  - How to explain it: "All anti-cheat computer vision runs directly on the candidate's 
+    device through MediaPipe WebAssembly. No video feed ever leaves their computer."
+
+• MediaPipe BlazeFace Detector
+  - What it is: A lightweight face detection model running every 500 milliseconds.
+  - Why we used it: Detects if the candidate leaves the frame for more than 1.5 
+    seconds or if a second person enters the frame, immediately pausing the exam.
+  - How to explain it: "BlazeFace runs continuously to verify single-person presence, 
+    blurring the screen if the candidate looks away or leaves the frame."
+
+• MediaPipe EfficientDet-Lite0 (Mobile Phone Detector)
+  - What it is: An on-device object detection model trained on the COCO dataset.
+  - Why we used it: Scans the camera feed in real-time to detect handheld mobile 
+    devices ('cell phone' category). If a candidate picks up a phone, the test 
+    freezes with a blurred warning overlay until the phone is put away.
+  - How to explain it: "We embedded EfficientDet-Lite0 to spot smartphones in the 
+    webcam frame. If a phone appears, the assessment immediately locks and logs a flag."
+
+• HTML5 Canvas Luminance Analyzer
+  - What it is: An algorithmic pixel brightness check running on sampled video frames.
+  - Why we used it: Detects if someone physically covers the camera lens with a finger 
+    or piece of tape by calculating average pixel brightness.
+  - How to explain it: "A lightweight canvas script calculates pixel brightness to 
+    catch candidates trying to cover their camera lens."
+
+--------------------------------------------------------------------------------
+4. AUDIO & CONVERSATIONAL VOICE (SPEECH PROCESSING)
+--------------------------------------------------------------------------------
+
+• Browser Web Speech API — SpeechSynthesis (Text-to-Speech)
+  - What it is: Native browser audio synthesis engine.
+  - Why we used it: Delivers zero-latency spoken questions. We tuned the speaking 
+    cadence to a natural 0.95x speed and programmed auto-selection for the most 
+    natural human voices (e.g., Microsoft Natural Online, Google US English).
+  - How to explain it: "SpeechSynthesis reads the questions and mentor feedback 
+    aloud in a warm, natural human cadence rather than a robotic voice."
+
+• Browser Web Speech API — SpeechRecognition (Speech-to-Text)
+  - What it is: Native browser real-time speech transcription.
+  - Why we used it: Converts the candidate's spoken answer into text in real-time 
+    with a live editable preview, allowing the user to make quick edits before submitting.
+  - How to explain it: "SpeechRecognition transcribes candidate speech on the fly, 
+    giving them a live preview to polish their answer before grading."
+
+--------------------------------------------------------------------------------
+5. BACKEND & API ARCHITECTURE
+--------------------------------------------------------------------------------
+
+• FastAPI (Python 3.10+)
+  - What it is: A modern, high-speed asynchronous Python web framework.
+  - Why we used it: Provides clean endpoints (`/api/questions`, `/api/evaluate`, 
+    `/api/report`) with automatic input validation via Pydantic schemas.
+  - How to explain it: "FastAPI handles our REST endpoints, securely storing the 
+    AI Studio API key and orchestrating prompt pipelines."
+
+• Pydantic (v2)
+  - What it is: Data validation and settings management library using Python type hints.
+  - Why we used it: Enforces strict data models for candidate configs, rubric scores, 
+    and evaluation reports.
+  - How to explain it: "Pydantic ensures every request and response strictly matches 
+    our data contracts."
+
+• Uvicorn
+  - What it is: An ASGI web server implementation for Python.
+  - Why we used it: Powers the asynchronous execution of FastAPI with live-reloading.
+  - How to explain it: "Uvicorn runs our asynchronous backend server with high 
+    concurrency."
+
+--------------------------------------------------------------------------------
+6. CLIENT-SIDE STATE & DATA PERSISTENCE
+--------------------------------------------------------------------------------
+
+• Stateless Backend + Browser localStorage Architecture
+  - What it is: A zero-database session recovery architecture.
+  - Why we used it: Keeps the app completely free of user databases or authentication 
+    walls. Session state, answers, scores, and integrity logs reside in `localStorage`. 
+    If a user accidentally refreshes the page, they can resume right where they left off.
+  - How to explain it: "We eliminated database complexity. Sessions persist in 
+    localStorage with timestamp recovery, making the platform fast, private, and 
+    capable of resuming mid-interview."
+
+--------------------------------------------------------------------------------
+7. AUTOMATION & DEPLOYMENT TOOLING
+--------------------------------------------------------------------------------
+
+• Automated 1-Click Launcher (start.bat)
+  - What it is: An intelligent batch script designed for seamless cloning and sharing.
+  - Why we used it: Automatically verifies Python and Node.js prerequisites, installs 
+    missing npm packages and pip requirements, sets up the `.env` configuration, 
+    and launches both backend and frontend servers in separate windows.
+  - How to explain it: "We engineered a plug-and-play start.bat script so anyone can 
+    clone our repository and start the entire app with a single double-click."
