@@ -89,8 +89,11 @@ start "AI Job Simulator - Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 echo.
 echo ========================================================
 echo   Simulation is running!
-echo   Open your browser to: http://localhost:5173
+echo   Opening: http://localhost:5173 ...
 echo   (Recommended: Use Chrome or Edge for Speech and Camera)
 echo ========================================================
 echo.
+
+REM Automatically open browser
+start http://localhost:5173
 pause
