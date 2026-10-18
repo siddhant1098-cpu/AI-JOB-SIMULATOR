@@ -40,6 +40,17 @@ export default function SetupForm({ onStart, isLoading }) {
   const [durationMin, setDurationMin] = React.useState(15);
   const [strictMode, setStrictMode] = React.useState(true);
 
+  // After a few seconds of loading, tell the user the server may be waking up
+  const [isSlow, setIsSlow] = React.useState(false);
+  React.useEffect(() => {
+    if (!isLoading) {
+      setIsSlow(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setIsSlow(true), 6000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
+
   // Update role when domain changes
   React.useEffect(() => {
     const roles = ROLES[domain] || [];
@@ -301,6 +312,11 @@ export default function SetupForm({ onStart, isLoading }) {
               <span>Start Assessment →</span>
             )}
           </button>
+          {isLoading && isSlow && (
+            <p className="text-center text-[11px] text-stone-500 -mt-2">
+              Waking up the server — the first start can take up to a minute.
+            </p>
+          )}
         </form>
       </div>
     </div>

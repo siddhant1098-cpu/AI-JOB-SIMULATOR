@@ -4,7 +4,7 @@ import QuestionRunner from './components/QuestionRunner';
 import ReportPage from './components/ReportPage';
 import ResumeScreen from './components/ResumeScreen';
 import { loadSession, saveSession, clearSession, createSession } from './session';
-import { generateQuestions } from './api';
+import { generateQuestions, warmUpBackend } from './api';
 
 /**
  * App — top-level router
@@ -16,8 +16,9 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [setupError, setSetupError] = useState(null);
 
-  // On mount: check for existing session
+  // On mount: wake the backend early, then check for existing session
   useEffect(() => {
+    warmUpBackend();
     const saved = loadSession();
     if (saved && saved.stage === 'running' && saved.questions?.length > 0) {
       setSession(saved);

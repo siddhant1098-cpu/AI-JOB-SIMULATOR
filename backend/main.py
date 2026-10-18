@@ -74,25 +74,56 @@ def extract_json(text: str) -> dict:
     raise ValueError(f"Could not parse valid JSON from text: {text[:200]}")
 
 
-def chat(system: str, user: str, temperature: float = 0.7) -> str:
+# Models are tried in order. Override with GEMINI_MODELS="model-a,model-b" on Render
+# so a wrong/unavailable model name never costs a slow failed attempt.
+MODELS_TO_TRY = [
+    m.strip()
+    for m in os.getenv(
+        "GEMINI_MODELS", "gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash-lite"
+    ).split(",")
+    if m.strip()
+]
+# Max seconds to wait on ONE model before falling through to the next one.
+LLM_TIMEOUT_SEC = float(os.getenv("LLM_TIMEOUT_SEC", "20"))
+
+_configured_key = None
+_model_cache: dict = {}
+
+
+def _get_model(name: str, api_key: str):
+    """Configure the SDK once and reuse model objects instead of rebuilding per call."""
+    global _configured_key
+    if _configured_key != api_key:
+        genai.configure(api_key=api_key)
+        _configured_key = api_key
+        _model_cache.clear()
+    if name not in _model_cache:
+        _model_cache[name] = genai.GenerativeModel(model_name=name)
+    return _model_cache[name]
+
+
+def chat(system: str, user: str, temperature: float = 0.7, max_tokens: int = 2048) -> str:
     """Call Gemini and return the text response (always JSON per mime type config)."""
     api_key = os.getenv("GOOGLE_API_KEY", "").strip()
     if not api_key:
         raise ValueError("GOOGLE_API_KEY is not set in backend/.env")
-    genai.configure(api_key=api_key)
 
     prompt = f"{system}\n\n{user}"
     gen_config = genai.GenerationConfig(
         response_mime_type="application/json",
         temperature=temperature,
+        max_output_tokens=max_tokens,
     )
 
-    models_to_try = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"]
     last_err = None
-    for m_name in models_to_try:
+    for m_name in MODELS_TO_TRY:
         try:
-            m = genai.GenerativeModel(model_name=m_name)
-            resp = m.generate_content(prompt, generation_config=gen_config)
+            m = _get_model(m_name, api_key)
+            resp = m.generate_content(
+                prompt,
+                generation_config=gen_config,
+                request_options={"timeout": LLM_TIMEOUT_SEC},
+            )
             if resp.text:
                 return resp.text
         except Exception as e:
@@ -157,8 +188,11 @@ Do not use double quotes inside scenario text; use single quotes.
 Return JSON: {{"items":[{{"id":1,"type":"scenario","text":"..."}}]}}"""
 
 
+# NOTE: endpoints are plain `def` (not `async def`) on purpose. The Gemini call is
+# blocking; FastAPI runs `def` endpoints in a threadpool so one slow call no longer
+# freezes the whole server (including health checks and other users' requests).
 @app.post("/api/questions")
-async def generate_questions(req: QuestionsRequest):
+def generate_questions(req: QuestionsRequest):
     c = req.config
     if c.mode == "scenario":
         user_msg = QUESTIONS_USER_SCENARIO.format(
@@ -172,7 +206,7 @@ async def generate_questions(req: QuestionsRequest):
         )
 
     try:
-        raw = chat(QUESTIONS_SYSTEM, user_msg, temperature=0.7)
+        raw = chat(QUESTIONS_SYSTEM, user_msg, temperature=0.7, max_tokens=1024)
         data = extract_json(raw)
         return {"items": data.get("items", [])}
     except Exception as e:
@@ -221,7 +255,7 @@ Return JSON:
 
 
 @app.post("/api/evaluate")
-async def evaluate_answer(req: EvaluateRequest):
+def evaluate_answer(req: EvaluateRequest):
     c = req.config
     try:
         raw = chat(
@@ -294,7 +328,7 @@ def score_to_grade(score_0_to_10: float) -> str:
 
 
 @app.post("/api/report")
-async def generate_report(req: ReportRequest):
+def generate_report(req: ReportRequest):
     pairs = req.qa_pairs
     if not pairs:
         raise HTTPException(status_code=400, detail="No Q&A pairs provided")
@@ -347,3 +381,9 @@ async def generate_report(req: ReportRequest):
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "AI Job Simulator API"}
+
+
+@app.get("/health")
+async def health():
+    """Lightweight endpoint used by the frontend to wake a sleeping Render instance."""
+    return {"status": "ok"}
