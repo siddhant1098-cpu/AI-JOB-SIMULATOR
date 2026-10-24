@@ -199,7 +199,7 @@ Projects:
         difficulty: 'medium',
         numQuestions: 3,
         durationMin: 15,
-        strictMode: false,
+        strictMode: true,
         pressureMode,
         candidate_name: candidateName.trim() || 'Candidate',
         resume_text: null,

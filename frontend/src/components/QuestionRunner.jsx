@@ -64,14 +64,12 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   const camera = useCamera(handleFlag, isStrict);
 
   useEffect(() => {
-    if (isStrict) {
-      camera.startCamera();
-    }
+    camera.startCamera();
     return () => {
       camera.stopCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStrict]);
+  }, []);
 
   const rawQ = isFollowUp
     ? { id: `fu-${currentIndex}`, type: 'follow_up', text: followUp }
@@ -207,15 +205,26 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
     }
   }, [phase, speech.isListening, editedTranscript]);
 
+  // ── Auto-submit in Pressure Mode when 60s Deadline is reached ────────────────
+  useEffect(() => {
+    if (!isPressureMode) return;
+    if (questionElapsedSec >= 60 && !answeredRef.current && phase !== 'evaluating' && !feedback) {
+      showToastWarning('⏱️ 60-Second Deadline Expired! Auto-submitting response...');
+      handleSubmitAnswer();
+    }
+  }, [isPressureMode, questionElapsedSec, phase, feedback]);
+
   // ── Submit Answer ───────────────────────────────────────────────────────────
   const handleSubmitAnswer = async () => {
     if (answeredRef.current) return;
     answeredRef.current = true;
 
     speech.stopListening();
+    if (typeof speech.stop === 'function') speech.stop();
     setPhase('evaluating');
 
-    const finalAnswer = editedTranscript.trim() || 'No answer provided.';
+    const trimmed = (editedTranscript || '').trim();
+    const finalAnswer = trimmed || (isPressureMode ? '[NO ANSWER PROVIDED - 60s RESPONSE DEADLINE EXPIRED]' : 'No answer provided.');
 
     try {
       const evaluation = await evaluateAnswer({
@@ -252,13 +261,43 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
         setFollowUp(evaluation.follow_up_question);
       }
     } catch {
+      const isUnanswered = !trimmed || finalAnswer.includes('NO ANSWER PROVIDED') || finalAnswer === 'No answer provided.';
       setFeedback({
-        score: 8.0,
-        scores: { practical_solution: 8.0, problem_solving: 8.0, communication: 8.0 },
-        feedback: 'Practical response that demonstrates good workplace intuition and problem solving.',
-        strengths: ['Clear answer', 'Practical approach'],
-        improvements: ['Could elaborate with specific metrics'],
+        overall_score: isUnanswered ? 7.0 : 70.0,
+        dimension_scores: isUnanswered ? {
+          problem_solving: 5.0,
+          decision_making: 5.0,
+          communication: 10.0,
+          etiquette: 10.0,
+          prioritisation: 5.0,
+          accountability: 10.0,
+          teamwork: 5.0,
+          adaptability: 5.0,
+        } : {
+          problem_solving: 70.0,
+          decision_making: 70.0,
+          communication: 70.0,
+          etiquette: 75.0,
+          prioritisation: 70.0,
+          accountability: 70.0,
+          teamwork: 70.0,
+          adaptability: 70.0,
+        },
+        verdict: isUnanswered ? 'developing' : 'good',
+        feedback: isUnanswered
+          ? 'CRITICAL SLA BREACH: You did not provide any response within the mandatory 60-second operational window. In high-stakes workplace incidents, complete silence causes severe operational failure.'
+          : 'Practical response recorded under time pressure.',
+        strengths: isUnanswered ? [] : ['Direct response under time constraints'],
+        improvement_areas: isUnanswered
+          ? ['Failed to formulate an action plan within the 60-second deadline', 'Lack of stakeholder containment communication']
+          : ['Could provide deeper containment steps'],
+        consequences: isUnanswered
+          ? 'Crisis escalated directly to executive level with severe operational downtime due to lack of response.'
+          : 'Standard operational mitigation in progress.',
+        suggested_improved_response: 'Even under 60-second pressure, immediately state initial containment and ETA.',
+        do_differently: ['State containment immediately within 30 seconds', 'Never let the SLA timer expire in silence'],
         follow_up_question: null,
+        total: isUnanswered ? 0.7 : 7.0,
       });
     }
   };

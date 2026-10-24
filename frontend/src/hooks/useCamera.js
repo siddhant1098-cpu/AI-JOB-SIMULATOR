@@ -24,6 +24,7 @@ const DARK_THRESHOLD = 30; // avg brightness below this = dark frame
 export function useCamera(onFlag, strictMode = true) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const internalCanvasRef = useRef(null);
   const streamRef = useRef(null);
   const faceDetectorRef = useRef(null);
   const objectDetectorRef = useRef(null);
@@ -66,8 +67,14 @@ export function useCamera(onFlag, strictMode = true) {
   // Average pixel brightness on a small canvas sample to detect covered lens
   const checkBrightness = useCallback(() => {
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < 2) return true;
+    if (!video || video.readyState < 2) return true;
+    let canvas = canvasRef.current;
+    if (!canvas) {
+      if (!internalCanvasRef.current) {
+        internalCanvasRef.current = document.createElement('canvas');
+      }
+      canvas = internalCanvasRef.current;
+    }
     const ctx = canvas.getContext('2d');
     canvas.width = 64;
     canvas.height = 48;
@@ -87,7 +94,7 @@ export function useCamera(onFlag, strictMode = true) {
       const { FaceDetector, ObjectDetector, FilesetResolver } =
         await import('@mediapipe/tasks-vision');
       const filesetResolver = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/wasm'
       );
 
       // 1. Face Detector
@@ -148,7 +155,7 @@ export function useCamera(onFlag, strictMode = true) {
 
       setDetectorLoaded(true);
     } catch (e) {
-      console.warn('MediaPipe detectors failed to initialize:', e);
+      console.warn('MediaPipe detectors failed to initialize (vision anti-cheat will use fallback):', e);
     }
   }, []);
 
@@ -232,25 +239,42 @@ export function useCamera(onFlag, strictMode = true) {
       // Fallback if model failed to load
       clearBlur();
     }
-  }, [checkBrightness, triggerBlur, clearBlur, addFlag]);
+  }, [checkBrightness, triggerBlur, clearBlur, addFlag, cameraReady]);
 
   const startCamera = useCallback(async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera mediaDevices API is not available (browser context may not be secure).');
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 320, height: 240, facingMode: 'user' },
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setCameraReady(true);
       setCameraError(null);
-      await loadDetectors();
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        videoRef.current.play().catch((err) => {
+          console.warn('Video auto-playback warning:', err);
+        });
+      }
+
+      try {
+        await loadDetectors();
+      } catch (detErr) {
+        console.warn('Detector loader caught:', detErr);
+      }
+
       intervalRef.current = setInterval(runDetection, DETECT_INTERVAL_MS);
     } catch (e) {
+      console.warn('startCamera error:', e);
       setCameraError(e.message || 'Camera access denied');
+      setCameraReady(false);
     }
   }, [loadDetectors, runDetection]);
 
@@ -263,6 +287,19 @@ export function useCamera(onFlag, strictMode = true) {
     }
     setCameraReady(false);
   }, []);
+
+  // Continuously ensure videoRef element is connected to the active stream
+  useEffect(() => {
+    if (cameraReady && streamRef.current && videoRef.current) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  });
 
   // Restart detection loop once detector loads
   useEffect(() => {

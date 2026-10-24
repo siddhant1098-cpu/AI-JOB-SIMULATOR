@@ -448,7 +448,58 @@ async def evaluate_answer(req: EvaluateRequest):
     character = question_data.get("character", "Hiring Manager")
     authority_level = question_data.get("character_authority_level", 3)
     priority = question_data.get("priority", "P2")
-    pressure_note = "PRESSURE MODE is ON — the candidate had only 60 seconds to respond. Evaluate their decision quality under time pressure." if c.pressureMode else ""
+
+    # Detect if candidate failed to answer (unanswered, empty, or timed out under Pressure Mode)
+    answer_text = (req.answer or "").strip()
+    is_failed_answer = (
+        not answer_text
+        or "NO ANSWER PROVIDED" in answer_text.upper()
+        or answer_text == "No answer provided."
+    )
+
+    if is_failed_answer:
+        # Severe marks penalty for failing to answer within the 60s SLA
+        failure_dim_scores = {
+            "problem_solving": 5.0,
+            "decision_making": 5.0,
+            "communication": 10.0,
+            "etiquette": 10.0,
+            "prioritisation": 5.0,
+            "accountability": 10.0,
+            "teamwork": 5.0,
+            "adaptability": 5.0,
+        }
+        return {
+            "dimension_scores": failure_dim_scores,
+            "overall_score": 7.0,
+            "verdict": "developing",
+            "evidence_for_scores": "CRITICAL SLA BREACH: Candidate failed to submit any response or decision within the mandatory 60-second operational window. In high-stakes workplace incidents, silence causes complete operational escalation.",
+            "feedback": "CRITICAL SLA BREACH: You did not provide any response within the mandatory 60-second deadline. During an active incident or high-stakes interview, total silence paralyzes the team and destroys executive and stakeholder confidence. Even an immediate acknowledgement with preliminary containment steps is necessary.",
+            "strengths": [],
+            "improvement_areas": [
+                "Failed to formulate or communicate any action plan within the 60-second deadline",
+                "Lack of stakeholder containment communication",
+                "Critical inaction during a time-sensitive operational emergency"
+            ],
+            "consequences": "Due to zero response within the 60s SLA, the incident escalated directly to executive crisis leadership with severe operational downtime and stakeholder escalation.",
+            "suggested_improved_response": "Even under extreme 60-second pressure, immediately state: 'Acknowledging the incident immediately. Containment step 1 is isolating the affected node. Next status update will be delivered in 15 minutes.'",
+            "do_differently": [
+                "Always communicate immediate containment within the first 30 seconds",
+                "Never let the response SLA timer lapse without addressing the stakeholder"
+            ],
+            "follow_up": None,
+            "correctness": 0.7,
+            "problem_solving": 0.5,
+            "communication": 1.0,
+            "total": 0.7,
+        }
+
+    pressure_note = (
+        "PRESSURE MODE is ON (60-second hard deadline). "
+        "If the candidate provided an inadequate, shallow, or evasive answer under pressure, penalise their decision quality and problem-solving severely. "
+        "Reflect realistic operational consequences for poor time management."
+        if c.pressureMode else ""
+    )
 
     # Build scenario state context if available
     state_context = ""

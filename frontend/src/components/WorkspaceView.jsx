@@ -24,7 +24,9 @@ import {
   TrendingUp,
   BarChart3,
   Timer,
-  Zap
+  Zap,
+  Camera,
+  Video
 } from 'lucide-react';
 import FeedbackCard from './FeedbackCard';
 import CorporateLogo from './CorporateLogo';
@@ -64,7 +66,7 @@ export default function WorkspaceView({
   handleContextMenu
 }) {
   const { config = {}, questions = [], currentIndex = 0 } = session || {};
-  const { videoRef, cameraReady, cameraError, faceCount = 1, phoneDetected = false } = camera || {};
+  const { videoRef, cameraReady, cameraError, faceCount = 1, phoneDetected = false, startCamera } = camera || {};
 
   const [activeTab, setActiveTab] = useState('action_plan');
 
@@ -428,12 +430,14 @@ export default function WorkspaceView({
             <div className="dash-card p-7 space-y-4">
               <div className="flex items-center justify-between border-b border-[#282a3e] pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className={`w-2 h-2 rounded-full ${cameraReady ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                   <span className="text-xs font-bold text-white tracking-tight">
                     Integrity Proctor Radar
                   </span>
                 </div>
-                <span className="text-xs font-mono text-slate-400">On-Device AI</span>
+                <span className="text-xs font-mono text-slate-400">
+                  {cameraReady ? '● Live Feed' : 'Connecting...'}
+                </span>
               </div>
 
               <div className={`relative rounded-2xl overflow-hidden aspect-video bg-[#0d0e17] border transition-all ${
@@ -441,11 +445,29 @@ export default function WorkspaceView({
               }`}>
                 <video
                   ref={videoRef}
-                  muted
+                  autoPlay
                   playsInline
+                  muted
                   className="w-full h-full object-cover"
                   style={{ transform: 'scaleX(-1)' }}
                 />
+
+                {!cameraReady && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-[#0d0e17]/95 text-center z-10 space-y-2">
+                    <Video className="w-7 h-7 text-purple-400 animate-pulse" />
+                    <p className="text-xs font-medium text-slate-300">
+                      {cameraError ? cameraError : 'Initializing camera feed…'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => startCamera && startCamera()}
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-xs font-bold text-purple-200 transition-all flex items-center gap-1.5"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{cameraError ? 'Retry Camera Access' : 'Enable Camera'}</span>
+                    </button>
+                  </div>
+                )}
 
                 {phoneDetected && (
                   <div className="absolute inset-0 bg-rose-950/85 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center z-20 animate-pulse">
@@ -457,7 +479,7 @@ export default function WorkspaceView({
 
                 <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 text-[10px] font-mono">
                   <span className="px-2.5 py-1 rounded-lg bg-black/70 text-emerald-300 border border-emerald-500/30">
-                    {faceCount === 1 ? '1 Face Verified' : 'Verifying...'}
+                    {faceCount === 1 ? '1 Face Verified' : faceCount > 1 ? 'Multiple Faces' : 'Verifying...'}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-black/70 text-slate-300">
                     Zero Cloud Upload
