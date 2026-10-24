@@ -84,13 +84,14 @@ export default function ReportPage({ session, onReset }) {
   }
 
   const {
-    overall_score = 8.5,
+    overall_score = 75,
     grade = 'A',
     strengths = [],
     weaknesses = [],
     next_steps = [],
     integrity_note,
-    skill_breakdown = { correctness: 8.5, problem_solving: 8.2, communication: 8.7 },
+    next_scenario_direction,
+    skill_breakdown = {},
   } = report || {};
 
   const gStyle = GRADE_STYLES[grade] || GRADE_STYLES.A;
@@ -98,17 +99,28 @@ export default function ReportPage({ session, onReset }) {
   const hasCheating = flagList.length > 0;
   const isInterview = session.config.mode === 'interview';
 
-  const radarData = [
-    { subject: 'Practical Solution', A: (skill_breakdown?.correctness || 8) * 10, fullMark: 100 },
-    { subject: 'Problem Solving', A: (skill_breakdown?.problem_solving || 8) * 10, fullMark: 100 },
-    { subject: 'Communication', A: (skill_breakdown?.communication || 8) * 10, fullMark: 100 },
-  ];
+  // 8-dimension radar data (0-100 scale)
+  const dimensionLabels = {
+    problem_solving: 'Problem Solving',
+    decision_making: 'Decision Making',
+    communication: 'Communication',
+    etiquette: 'Etiquette',
+    prioritisation: 'Prioritisation',
+    accountability: 'Accountability',
+    teamwork: 'Teamwork',
+    adaptability: 'Adaptability',
+  };
 
-  const barData = [
-    { name: 'Practical Solution', score: skill_breakdown?.correctness || 8 },
-    { name: 'Problem Solving', score: skill_breakdown?.problem_solving || 8 },
-    { name: 'Communication', score: skill_breakdown?.communication || 8 },
-  ];
+  const radarData = Object.entries(dimensionLabels).map(([key, label]) => ({
+    subject: label,
+    A: skill_breakdown?.[key] || 0,
+    fullMark: 100,
+  }));
+
+  const barData = Object.entries(dimensionLabels).map(([key, label]) => ({
+    name: label,
+    score: skill_breakdown?.[key] || 0,
+  }));
 
   return (
     <div className="w-full min-h-screen p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto flex flex-col justify-start select-none font-sans bg-futuristic-mesh">
@@ -152,8 +164,8 @@ export default function ReportPage({ session, onReset }) {
             </div>
 
             <div className="text-3xl font-extrabold text-white">
-              {overall_score.toFixed(1)}
-              <span className="text-base font-normal text-slate-400"> / 10 overall</span>
+              {Math.round(overall_score)}
+              <span className="text-base font-normal text-slate-400"> / 100 overall</span>
             </div>
 
             <p className="text-slate-400 text-xs leading-relaxed max-w-sm mx-auto">
@@ -271,6 +283,19 @@ export default function ReportPage({ session, onReset }) {
                   </div>
                 </div>
               )}
+
+              {/* Recommended Next Scenario Direction */}
+              {next_scenario_direction && (
+                <div className="ios-glass-card rounded-3xl p-6 border-fuchsia-500/20 space-y-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300 flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-fuchsia-400" />
+                    Recommended Next Scenario
+                  </span>
+                  <p className="text-xs text-slate-200 leading-relaxed p-3 rounded-2xl bg-white/[0.03] border border-white/10">
+                    {next_scenario_direction}
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             /* Per-Question Breakdown */
@@ -283,9 +308,9 @@ export default function ReportPage({ session, onReset }) {
                       <span className="text-xs font-mono font-bold text-cyan-400">
                         Part {idx + 1}
                       </span>
-                      {s.score && (
+                      {(s.overall_score || s.score) && (
                         <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
-                          {s.score.toFixed(1)} / 10
+                          {Math.round(s.overall_score || (s.score * 10) || 0)} / 100
                         </span>
                       )}
                     </div>

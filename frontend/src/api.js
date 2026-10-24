@@ -15,8 +15,47 @@ async function post(path, body) {
 }
 
 export const generateQuestions = (config) => post('/api/questions', { config });
-export const evaluateAnswer = (config, question, answer, questionIndex) =>
-  post('/api/evaluate', { config, question, answer, questionIndex });
+
+export const evaluateAnswer = ({
+  question_id,
+  question_text,
+  candidate_answer,
+  domain,
+  role,
+  difficulty,
+  mode,
+  strict_mode,
+  candidate_name,
+  resume_text,
+  character,
+  character_authority_level,
+  priority,
+  scenario_state,
+  pressureMode,
+}) => post('/api/evaluate', {
+  config: {
+    mode,
+    domain,
+    company: '',
+    role,
+    difficulty,
+    strictMode: strict_mode,
+    candidate_name,
+    resume_text,
+    pressureMode: pressureMode || false,
+  },
+  question: {
+    id: question_id,
+    text: question_text,
+    character: character || 'Hiring Manager',
+    character_authority_level: character_authority_level || 3,
+    priority: priority || 'P2',
+  },
+  answer: candidate_answer,
+  questionIndex: 0,
+  scenario_state: scenario_state || null,
+});
+
 export const generateReport = (config, qa_pairs, flags) =>
   post('/api/report', { config, qa_pairs, flags });
 

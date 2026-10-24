@@ -191,6 +191,10 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
         strict_mode: isStrict,
         candidate_name: config.candidate_name,
         resume_text: config.resume_text,
+        character: currentQuestion.character,
+        character_authority_level: currentQuestion.character_authority_level,
+        priority: currentQuestion.priority,
+        pressureMode: config.pressureMode,
       });
 
       setFeedback(evaluation);

@@ -1,26 +1,31 @@
 """
 AI Job Simulator – FastAPI Backend
 Endpoints:
-  POST /api/questions  → generate interview/scenario questions
-  POST /api/evaluate   → score a single answer
-  POST /api/report     → generate final session report
+  POST /api/questions     → generate interview/scenario questions (supports resume-grounded questions)
+  POST /api/evaluate      → score a single answer
+  POST /api/report        → generate final session report
+  POST /api/resume/parse  → extract text from PDF resume via pdfplumber + parse with Gemini LLM
 """
 
+import io
 import json
 import os
 import re
-from fastapi import FastAPI, HTTPException
+import subprocess
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from dotenv import load_dotenv
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 import google.generativeai as genai
+import pdfplumber
+import json_repair
 
 load_dotenv()
 
-
-
-app = FastAPI(title="AI Job Simulator API", version="1.0.0")
+app = FastAPI(title="AI Job Simulator API", version="1.1.0")
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
@@ -31,7 +36,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-import json_repair
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 def extract_json(text: str) -> dict:
@@ -112,6 +116,11 @@ class Config(BaseModel):
     numQuestions: int = 5
     durationMin: int = 20
     strictMode: bool = True
+    pressureMode: bool = False          # Pressure Room 60s mode
+    candidate_name: Optional[str] = "Candidate"
+    resume_text: Optional[str] = None
+    resume_skills: Optional[List[str]] = []
+    resume_filename: Optional[str] = None
 
 
 class QuestionsRequest(BaseModel):
@@ -120,9 +129,10 @@ class QuestionsRequest(BaseModel):
 
 class EvaluateRequest(BaseModel):
     config: Config
-    question: dict          # {id, type, text}
+    question: dict          # {id, type, text, character, character_authority_level, priority}
     answer: str
     questionIndex: int = 0
+    scenario_state: Optional[dict] = None  # consequence engine state
 
 
 class ReportRequest(BaseModel):
@@ -133,42 +143,131 @@ class ReportRequest(BaseModel):
 
 # ── Endpoint: /api/questions ──────────────────────────────────────────────────
 
-QUESTIONS_SYSTEM = """You are a warm, experienced hiring manager and team lead. You MUST return strictly valid JSON only.
-No prose, no markdown fences.
-CRITICAL: Never put unescaped double quotes inside text values; use single quotes ('like this') if quoting.
-Make questions sound natural and spoken by an actual human colleague in a friendly interview, not a cold exam paper.
-Return exactly:
-{{"items":[{{"id":1,"type":"technical|behavioural|situational|scenario","text":"..."}}]}}"""
+QUESTIONS_SYSTEM = """You are the AI engine for AI Job Simulator, a realistic workplace simulation and professional skills assessment platform.
 
-QUESTIONS_USER_INTERVIEW = """You are a friendly hiring manager at {company} having a conversational interview for a {role} in {domain}.
-Difficulty: {difficulty}.
-Generate {n} questions (mix of technical, behavioural, situational).
-Speak naturally and warmly, like a real person in a comfortable conversation (e.g. 'I'd love to hear how you'd handle...', 'Tell me about a time when...').
-Keep each under 35 words so it sounds natural when spoken aloud.
+You are NOT a generic chatbot. You must behave as a workplace simulation engine, scenario generator, character simulator, and evidence-based evaluator.
+
+CRITICAL: Return strictly valid JSON only. No prose, no markdown fences. Never put unescaped double quotes inside text values; use single quotes if quoting.
+
+## WORKPLACE SCENARIO GENERATION
+Generate realistic, role-specific workplace challenges relevant to the selected industry and domain.
+Scenarios may involve:
+- Incomplete tasks and missed deadlines
+- Conflicts between coworkers
+- Unhappy clients
+- Unexpected technical or operational problems
+- Conflicting priorities
+- Budget or resource limitations
+- Project delays
+- Difficult conversations with managers
+- Executive-level decisions
+- Critical incidents requiring escalation
+
+Every scenario must contain a clear context, the candidate's role, a specific problem, relevant constraints, and a decision or response the candidate must provide.
+Avoid repetitive, generic interview questions.
+
+## AUTHORITY-AWARE CHARACTERS
+Each scenario should feature a character the candidate interacts with. Select from:
+1. Coworker or teammate (authority_level: 1)
+2. Team leader or senior colleague (authority_level: 2)
+3. Manager (authority_level: 3)
+4. Department head (authority_level: 4)
+5. Client or external stakeholder (authority_level: 5)
+6. CEO or executive (authority_level: 6)
+
+Each character must have a distinct communication style, expectations, and relevant knowledge of the situation.
+
+## PRIORITY LEVELS
+Assign each scenario a priority:
+P1 — Low: Routine work or a normal update.
+P2 — Medium: A delayed task or a manageable problem.
+P3 — High: A major deadline, dissatisfied client, or significant operational risk.
+P4 — Critical: A serious incident requiring immediate action or escalation.
+
+## DIFFICULTY
+EASY: Straightforward problems, clear objectives, limited competing priorities.
+MEDIUM: Ambiguous information, competing tasks, follow-up questions, moderate consequences.
+HARD: Multiple stakeholders, incomplete information, competing priorities, difficult trade-offs, unexpected developments.
+
+Return the questions in this EXACT JSON format:
+{"items":[{"id":1,"type":"technical|behavioural|situational|scenario","text":"...","character":"<character name and role>","character_authority_level":<1-6>,"priority":"P1|P2|P3|P4","scenario_context":"<brief context>","objective":"<what candidate must do>","constraints":["<constraint 1>","<constraint 2>"],"evaluation_criteria":["<criterion 1>","<criterion 2>"]}]}
+"""
+
+QUESTIONS_USER_INTERVIEW = """You are conducting a professional interview at {company} for a {role} in {domain}.
+Difficulty: {difficulty}. Pressure Mode: {pressure_mode}.
+Generate {n} interview questions (mix of technical, behavioural, situational).
+
+For each question, create a realistic character (interviewer persona) with a specific authority level.
+Vary the characters — do NOT make every interviewer sound identical.
+Mix the priority levels across questions.
+
+Keep each question under 40 words so it sounds natural when spoken aloud.
 Do not use double quotes inside question text; use single quotes.
-Return JSON: {{"items":[{{"id":1,"type":"...","text":"..."}}]}}"""
+{pressure_note}
 
-QUESTIONS_USER_SCENARIO = """You are an experienced, supportive colleague at {company} describing a realistic workplace challenge for a {role} in {domain}.
-Difficulty: {difficulty}.
-Generate {n} realistic workplace scenario challenges.
-Phrase them in a relatable, spoken human way (e.g. 'Imagine it is two days before our big launch and the lead vendor calls in an emergency... how would you take charge?').
-Keep each under 40 words so it sounds natural when spoken aloud.
+Return JSON: {{"items":[{{"id":1,"type":"...","text":"...","character":"...","character_authority_level":...,"priority":"...","scenario_context":"...","objective":"...","constraints":[],"evaluation_criteria":[]}}]}}"""
+
+QUESTIONS_USER_SCENARIO = """You are generating realistic workplace scenario challenges at {company} for a {role} in {domain}.
+Difficulty: {difficulty}. Pressure Mode: {pressure_mode}.
+Generate {n} realistic workplace crisis/challenge scenarios.
+
+For each scenario:
+- Create a realistic character the candidate must interact with (vary authority levels 1-6)
+- Assign an appropriate priority level (P1-P4)
+- Include clear context, constraints, and objectives
+- Make the candidate feel like they are IN the situation, not answering an exam
+
+Keep each under 50 words so it sounds natural when spoken aloud.
 Do not use double quotes inside scenario text; use single quotes.
-Return JSON: {{"items":[{{"id":1,"type":"scenario","text":"..."}}]}}"""
+{pressure_note}
+
+Return JSON: {{"items":[{{"id":1,"type":"scenario","text":"...","character":"...","character_authority_level":...,"priority":"...","scenario_context":"...","objective":"...","constraints":[],"evaluation_criteria":[]}}]}}"""
+
+QUESTIONS_USER_RESUME = """You are conducting a personalized interview at {company} for a {role} in {domain}.
+Difficulty: {difficulty}. Pressure Mode: {pressure_mode}.
+
+The candidate submitted their resume below. Base your interview questions directly on their specific projects, technologies, and career experiences:
+---
+CANDIDATE RESUME:
+{resume_text}
+---
+
+Generate {n} conversational questions (mix of technical deep-dives into their listed projects, behavioural questions about their past responsibilities, and situational challenges).
+
+For each question, create a realistic interviewer character with a specific authority level.
+Vary the characters and priority levels.
+
+Keep each under 40 words so it sounds natural when spoken aloud.
+Do not use double quotes inside question text; use single quotes.
+{pressure_note}
+
+Return JSON: {{"items":[{{"id":1,"type":"...","text":"...","character":"...","character_authority_level":...,"priority":"...","scenario_context":"...","objective":"...","constraints":[],"evaluation_criteria":[]}}]}}"""
 
 
 @app.post("/api/questions")
 async def generate_questions(req: QuestionsRequest):
     c = req.config
-    if c.mode == "scenario":
+    pressure_mode = "ON" if c.pressureMode else "OFF"
+    pressure_note = "Every challenge has a 60-second response deadline. Increase urgency." if c.pressureMode else ""
+
+    if c.resume_text and len(c.resume_text.strip()) > 30:
+        user_msg = QUESTIONS_USER_RESUME.format(
+            company=c.company, role=c.role, domain=c.domain,
+            difficulty=c.difficulty, n=c.numQuestions,
+            resume_text=c.resume_text[:4000],
+            pressure_mode=pressure_mode, pressure_note=pressure_note
+        )
+    elif c.mode == "scenario":
         user_msg = QUESTIONS_USER_SCENARIO.format(
             company=c.company, role=c.role, domain=c.domain,
-            difficulty=c.difficulty, n=c.numQuestions
+            difficulty=c.difficulty, n=c.numQuestions,
+            pressure_mode=pressure_mode, pressure_note=pressure_note
         )
     else:
         user_msg = QUESTIONS_USER_INTERVIEW.format(
             company=c.company, role=c.role, domain=c.domain,
-            difficulty=c.difficulty, n=c.numQuestions
+            difficulty=c.difficulty, n=c.numQuestions,
+            pressure_mode=pressure_mode, pressure_note=pressure_note
         )
 
     try:
@@ -179,68 +278,212 @@ async def generate_questions(req: QuestionsRequest):
         raise HTTPException(status_code=500, detail=f"Question generation failed: {str(e)}")
 
 
+# ── Endpoint: /api/resume/parse (pdfplumber + LLM) ────────────────────────────
+
+RESUME_PARSE_SYSTEM = """You are an expert HR recruiter and technical talent specialist.
+Analyze the provided resume text extracted from a candidate's PDF and extract candidate profile information in strictly valid JSON format.
+Return JSON only:
+{
+  "candidate_name": "<Full Name or 'Candidate'>",
+  "candidate_email": "<Email address found on resume or null>",
+  "inferred_role": "<Best matching role title, e.g. Frontend Engineer, Backend Engineer, Full-Stack Developer, Operations Manager, Marketing Manager, Financial Analyst>",
+  "inferred_domain": "<Best matching domain from: Event Management, Software Engineering, Marketing, Finance, Healthcare, Human Resources, Sales, Operations, Education, Legal, Supply Chain, Customer Success>",
+  "key_skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"],
+  "experience_summary": "<1-2 sentence summary of experience and key accomplishments>",
+  "education": "<Highest degree or institution>",
+  "projects": ["<Project 1>", "<Project 2>"]
+}"""
+
+
+@app.post("/api/resume/parse")
+async def parse_resume(file: UploadFile = File(...)):
+    """Extract text from uploaded PDF resume via pdfplumber and extract structured candidate profile with Gemini LLM."""
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+    try:
+        contents = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded PDF file is empty.")
+
+    # Extract text with pdfplumber
+    extracted_text = ""
+    try:
+        with pdfplumber.open(io.BytesIO(contents)) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    extracted_text += text + "\n\n"
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to extract text from PDF: {str(e)}")
+
+    extracted_text = extracted_text.strip()
+    if not extracted_text or len(extracted_text) < 15:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not extract text from this PDF. Please ensure it contains selectable text rather than scanned images."
+        )
+
+    # Use LLM to structure resume data
+    try:
+        raw = chat(
+            RESUME_PARSE_SYSTEM,
+            f"Resume Text:\n\n{extracted_text[:6000]}",
+            temperature=0.2
+        )
+        parsed = extract_json(raw)
+    except Exception:
+        # Fallback if LLM extraction has an issue
+        parsed = {
+            "candidate_name": "Candidate",
+            "candidate_email": None,
+            "inferred_role": "Full-Stack Developer",
+            "inferred_domain": "Software Engineering",
+            "key_skills": [],
+            "experience_summary": "Extracted resume content ready for question generation.",
+            "education": "",
+            "projects": [],
+        }
+
+    # Attach raw extracted text for downstream question generation
+    parsed["resume_text"] = extracted_text[:8000]
+    parsed["filename"] = file.filename
+    return parsed
+
+
 # ── Endpoint: /api/evaluate ───────────────────────────────────────────────────
 
-EVALUATE_SYSTEM = """You are an encouraging, empathetic mentor and senior leader. You MUST return valid JSON only.
+EVALUATE_SYSTEM = """You are the AI evaluation engine for AI Job Simulator. You MUST return valid JSON only.
 No prose, no markdown fences.
-MARKING PHILOSOPHY:
-- Respect human speech: Candidates speak their answers in real-time. Spoken answers are conversational, imperfect, and practical.
-- Do NOT be harsh, academic, or pedantic. Value common sense, practical initiative, calm judgment, and empathy over textbook jargon.
-- If a candidate gives a thoughtful, realistic, or well-intentioned answer, grade them generously (typically 7.5 to 9.5 out of 10). A sensible plan deserves high praise.
-- Speak in a warm, encouraging human tone — like a trusted colleague giving supportive feedback over coffee. Never sound robotic or clinical."""
 
-EVALUATE_USER = """Listen to this candidate's spoken response and evaluate it with empathy, fairness, and encouragement.
+## PROFESSIONAL COMMUNICATION EVALUATION
+Evaluate whether the candidate communicates appropriately for the person they are addressing.
+- For a coworker: value clarity, collaboration, directness, and respect.
+- For a team leader: value accountability, respectful communication, and clear next steps.
+- For a manager: value concise explanations, ownership, timelines, risks, and proposed solutions.
+- For a CEO/executive: value concise business-relevant communication, impact, risks, decisions needed, strategic awareness.
+- For a client: value professionalism, empathy, clarity, transparency, and suitable commitments.
+
+Do not require excessively formal language in every situation. Evaluate whether tone and content fit the relationship and context.
+Do not penalise for simple English, accent, or minor grammatical errors if meaning and professional judgement are clear.
+
+## CONSEQUENCE ENGINE
+Candidate decisions must influence what happens next.
+If a candidate communicates early and proposes a sensible recovery plan, reflect the potential improvement.
+If a candidate hides information, ignores an urgent risk, or makes an unreasonable commitment, introduce plausible consequences.
+Do not make consequences arbitrary. Base them on the scenario facts and the candidate's actual decisions.
+Not every imperfect answer should cause failure. Allow reasonable alternative approaches.
+
+## FAIR SCORING (0-100 scale)
+Evaluate each response using evidence from the candidate's actual answer.
+Score each dimension from 0 to 100:
+- problem_solving: Did they identify the core issue and propose sensible steps?
+- decision_making: Did they make sound, timely decisions given the constraints?
+- communication: Was their explanation clear, authentic, and appropriate for the audience?
+- etiquette: Did they communicate appropriately for the character's authority level?
+- prioritisation: Did they address the most urgent aspects first?
+- accountability: Did they take ownership rather than deflecting?
+- teamwork: Did they consider others and collaborative solutions?
+- adaptability: Did they show flexibility and resilience?
+
+MARKING PHILOSOPHY:
+- Respect human speech: Candidates speak their answers in real-time. Spoken answers are conversational, imperfect, practical.
+- Do NOT be harsh, academic, or pedantic. Value common sense, practical initiative, calm judgment, and empathy.
+- If a candidate gives a thoughtful, realistic answer, grade generously (typically 70-95 out of 100).
+- A sensible practical plan deserves high praise.
+- Do not reward authority-based flattery, unnecessary jargon, excessive formality, or lengthy answers by themselves.
+"""
+
+EVALUATE_USER = """Evaluate this candidate's response with empathy, fairness, and evidence-based scoring.
 The response was transcribed from speech — ignore natural filler words, repetitions, and minor transcription quirks.
 
 Question: {question}
 Candidate's response: {answer}
 Role: {role} | Domain: {domain} | Difficulty: {difficulty} | Mode: {mode}
+Character interacting with: {character} (Authority Level: {authority_level})
+Scenario Priority: {priority}
+{pressure_note}
+{state_context}
 
-Scoring criteria (be fair, generous to good practical thinking, and encouraging):
-- correctness (0-10): Did they grasp the situation and propose sensible steps? (A practical common-sense answer deserves 7.5 - 9)
-- problem_solving (0-10): Did they show good instincts, calm decision-making, and teamwork?
-- communication (0-10): Was their explanation authentic, clear, and relatable?
-
-Tone of feedback:
-- Write feedback as if you are speaking directly to the candidate as a supportive human mentor.
-- Start with a genuine, warm compliment about what they handled well.
-- Then offer one gentle, practical tip for extra polish.
-- Keep the spoken tone natural, conversational, and uplifting.
+Score each dimension from 0 to 100 using evidence from the candidate's actual answer:
 
 Return JSON:
 {{
-  "correctness": <number 6-10 for sensible answers>,
-  "problem_solving": <number 6-10 for sensible answers>,
-  "communication": <number 6-10 for sensible answers>,
-  "verdict": "good|average|weak",
+  "dimension_scores": {{
+    "problem_solving": <0-100>,
+    "decision_making": <0-100>,
+    "communication": <0-100>,
+    "etiquette": <0-100>,
+    "prioritisation": <0-100>,
+    "accountability": <0-100>,
+    "teamwork": <0-100>,
+    "adaptability": <0-100>
+  }},
+  "overall_score": <weighted average 0-100>,
+  "verdict": "excellent|good|average|developing",
+  "evidence_for_scores": "<brief evidence justifying the scores>",
   "feedback": "<warm 2-3 sentence conversational coaching feedback addressed to 'you'>",
-  "expected_answer": "<a friendly, practical example of how an experienced colleague would handle this in 2 sentences>",
-  "do_differently": ["<encouraging positive tip 1>", "<practical tip 2>"],
-  "follow_up": "<one friendly, natural conversational follow-up question or null>"
+  "strengths": ["<strength 1>", "<strength 2>"],
+  "improvement_areas": ["<area 1>", "<area 2>"],
+  "consequences": "<what happens next based on this answer — realistic consequence>",
+  "suggested_improved_response": "<a practical example of a stronger response in 2-3 sentences>",
+  "do_differently": ["<encouraging tip 1>", "<practical tip 2>"],
+  "follow_up": "<one friendly conversational follow-up question or null>"
 }}"""
 
 
 @app.post("/api/evaluate")
 async def evaluate_answer(req: EvaluateRequest):
     c = req.config
+    question_data = req.question
+    character = question_data.get("character", "Hiring Manager")
+    authority_level = question_data.get("character_authority_level", 3)
+    priority = question_data.get("priority", "P2")
+    pressure_note = "PRESSURE MODE is ON — the candidate had only 60 seconds to respond. Evaluate their decision quality under time pressure." if c.pressureMode else ""
+
+    # Build scenario state context if available
+    state_context = ""
+    if req.scenario_state:
+        state_context = f"Previous scenario state: {json.dumps(req.scenario_state)}"
+
     try:
         raw = chat(
             EVALUATE_SYSTEM,
             EVALUATE_USER.format(
-                question=req.question.get("text", ""),
+                question=question_data.get("text", ""),
                 answer=req.answer,
                 role=c.role, domain=c.domain,
-                difficulty=c.difficulty, mode=c.mode
+                difficulty=c.difficulty, mode=c.mode,
+                character=character,
+                authority_level=authority_level,
+                priority=priority,
+                pressure_note=pressure_note,
+                state_context=state_context
             ),
             temperature=0.4
         )
         data = extract_json(raw)
-        # Compute weighted total (40% correctness, 30% problem_solving, 30% communication)
-        correctness = float(data.get("correctness", 0))
-        ps = float(data.get("problem_solving", 0))
-        comm = float(data.get("communication", 0))
-        total = round(correctness * 0.4 + ps * 0.3 + comm * 0.3, 2)
-        data["total"] = total
+
+        # Compute backward-compatible scores for frontend
+        dims = data.get("dimension_scores", {})
+        if dims:
+            # Calculate overall as average of all dimensions
+            all_scores = [v for v in dims.values() if isinstance(v, (int, float))]
+            overall = round(sum(all_scores) / len(all_scores), 1) if all_scores else 70
+            data["overall_score"] = overall
+
+            # Backward compatibility: map to 0-10 scale for old components
+            data["correctness"] = round(dims.get("problem_solving", 70) / 10, 1)
+            data["problem_solving"] = round(dims.get("decision_making", 70) / 10, 1)
+            data["communication"] = round(dims.get("communication", 70) / 10, 1)
+            data["total"] = round(overall / 10, 1)
+        else:
+            # Fallback if dimension_scores not returned
+            data["total"] = round(float(data.get("overall_score", 70)) / 10, 1)
+
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
@@ -248,13 +491,17 @@ async def evaluate_answer(req: EvaluateRequest):
 
 # ── Endpoint: /api/report ─────────────────────────────────────────────────────
 
-REPORT_SYSTEM = """You are a warm, encouraging executive coach and senior hiring partner. Return valid JSON only. No prose.
-Focus on celebrating the candidate's authentic potential, practical instincts, and real-world readiness."""
+REPORT_SYSTEM = """You are an encouraging executive coach and senior hiring partner for AI Job Simulator. Return valid JSON only. No prose.
+Use previous scenario results to identify demonstrated strengths and weaknesses.
+Recommend future scenarios that practise weaker skills while gradually increasing complexity.
+Do not claim improvement unless comparable previous results support it.
+Do not infer a candidate's personality, honesty, intelligence, or suitability for employment from a single answer.
+Focus on celebrating authentic potential, practical instincts, and real-world readiness."""
 
 REPORT_USER = """Generate an encouraging, constructive career development debrief for a candidate who completed their simulation.
 
 Role: {role} | Domain: {domain} | Company type: {company} | Mode: {mode}
-Overall score: {overall_score}/10
+Overall score: {overall_score}/100
 Grade: {grade}
 
 Q&A summary:
@@ -263,32 +510,38 @@ Q&A summary:
 Camera integrity flags: {flags}
 
 Guidelines:
-- Celebrate 3 authentic strengths they demonstrated (e.g. composure under pressure, practical common sense, clear empathy).
-- Highlight 2 gentle growth opportunities ("areas to explore" rather than harsh criticisms).
+- Celebrate 3 authentic strengths they demonstrated.
+- Highlight 2 gentle growth opportunities.
 - Provide 3 empowering next steps for their career journey.
+- Include a recommended next scenario direction based on their weak areas.
 
 Return JSON:
 {{
-  "overall_score": <number>,
-  "grade": "<A+|A|B|C|Needs Work>",
-  "strengths": ["<warmly worded strength 1>", "<strength 2>", "<strength 3>"],
-  "weaknesses": ["<gentle area to polish 1>", "<gentle area to polish 2>"],
-  "next_steps": ["<empowering next step 1>", "<next step 2>", "<next step 3>"],
-  "integrity_note": "<brief constructive note about camera integrity, e.g. 'Session completed smoothly with 0 flags'>",
+  "overall_score": <number 0-100>,
+  "grade": "<A+|A|B|C|Developing>",
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "weaknesses": ["<gentle area 1>", "<gentle area 2>"],
+  "next_steps": ["<next step 1>", "<next step 2>", "<next step 3>"],
+  "integrity_note": "<brief note about camera integrity>",
+  "next_scenario_direction": "<recommended next scenario type and focus area>",
   "skill_breakdown": {{
-    "correctness": <average 0-10>,
-    "problem_solving": <average 0-10>,
-    "communication": <average 0-10>
+    "problem_solving": <0-100>,
+    "decision_making": <0-100>,
+    "communication": <0-100>,
+    "etiquette": <0-100>,
+    "prioritisation": <0-100>,
+    "accountability": <0-100>,
+    "teamwork": <0-100>,
+    "adaptability": <0-100>
   }}
 }}"""
 
 GRADE_MAP = [(88, "A+"), (78, "A"), (68, "B"), (58, "C")]
 
 
-def score_to_grade(score_0_to_10: float) -> str:
-    pct = score_0_to_10 * 10
+def score_to_grade(score_0_to_100: float) -> str:
     for threshold, grade in GRADE_MAP:
-        if pct >= threshold:
+        if score_0_to_100 >= threshold:
             return grade
     return "Developing"
 
@@ -299,23 +552,39 @@ async def generate_report(req: ReportRequest):
     if not pairs:
         raise HTTPException(status_code=400, detail="No Q&A pairs provided")
 
-    # Compute averages
-    totals = [p.get("scores", {}).get("total", 0) for p in pairs]
-    overall = round(sum(totals) / len(totals), 2) if totals else 0
-    grade = score_to_grade(overall)
+    # Compute averages from dimension_scores (0-100 scale) or fall back to old 0-10 scores
+    dim_keys = ["problem_solving", "decision_making", "communication", "etiquette", "prioritisation", "accountability", "teamwork", "adaptability"]
+    dim_averages = {}
 
-    avg_correctness = round(sum(p.get("scores", {}).get("correctness", 0) for p in pairs) / len(pairs), 2)
-    avg_ps = round(sum(p.get("scores", {}).get("problem_solving", 0) for p in pairs) / len(pairs), 2)
-    avg_comm = round(sum(p.get("scores", {}).get("communication", 0) for p in pairs) / len(pairs), 2)
+    for key in dim_keys:
+        vals = []
+        for p in pairs:
+            dims = p.get("scores", {}).get("dimension_scores", {})
+            if key in dims:
+                vals.append(float(dims[key]))
+        if vals:
+            dim_averages[key] = round(sum(vals) / len(vals), 1)
+        else:
+            dim_averages[key] = 0
+
+    # Overall score: average of all dimension averages, or fallback to old total
+    if any(v > 0 for v in dim_averages.values()):
+        overall = round(sum(v for v in dim_averages.values() if v > 0) / max(1, sum(1 for v in dim_averages.values() if v > 0)), 1)
+    else:
+        # Fallback: use old 0-10 total scores, multiply by 10
+        totals = [p.get("scores", {}).get("total", 0) for p in pairs]
+        overall = round((sum(totals) / len(totals)) * 10, 1) if totals else 0
+
+    grade = score_to_grade(overall)
 
     # Build a text summary for the LLM
     qa_lines = []
     for i, p in enumerate(pairs, 1):
-        q = p.get("question", {}).get("text", "")
-        a = p.get("answer", "")[:200]  # truncate for prompt length
-        score = p.get("scores", {}).get("total", 0)
+        q = p.get("question", {}).get("text", "") if isinstance(p.get("question"), dict) else str(p.get("question", ""))
+        a = p.get("answer", "")[:200]
+        score = p.get("scores", {}).get("overall_score", p.get("scores", {}).get("total", 0))
         verdict = p.get("scores", {}).get("verdict", "")
-        qa_lines.append(f"Q{i} [{verdict}, {score}/10]: {q[:80]} | Answer: {a}")
+        qa_lines.append(f"Q{i} [{verdict}, {score}/100]: {q[:80]} | Answer: {a}")
 
     try:
         raw = chat(
@@ -333,11 +602,15 @@ async def generate_report(req: ReportRequest):
         # Override computed values so they're exact
         data["overall_score"] = overall
         data["grade"] = grade
-        data["skill_breakdown"] = {
-            "correctness": avg_correctness,
-            "problem_solving": avg_ps,
-            "communication": avg_comm,
+        data["skill_breakdown"] = dim_averages
+
+        # Backward compatibility: also provide 0-10 versions
+        data["skill_breakdown_10"] = {
+            "correctness": round(dim_averages.get("problem_solving", 0) / 10, 1),
+            "problem_solving": round(dim_averages.get("decision_making", 0) / 10, 1),
+            "communication": round(dim_averages.get("communication", 0) / 10, 1),
         }
+
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
@@ -346,4 +619,4 @@ async def generate_report(req: ReportRequest):
 # ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "AI Job Simulator API"}
+    return {"status": "ok", "message": "AI Job Simulator API v1.1.0"}

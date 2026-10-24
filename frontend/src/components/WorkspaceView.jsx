@@ -166,10 +166,26 @@ export default function WorkspaceView({
           {/* Incident Dossier Box */}
           <div className="ios-glass-card rounded-3xl p-5 sm:p-6 border-fuchsia-500/20 relative overflow-hidden space-y-4 shadow-[0_0_30px_rgba(217,70,239,0.08)]">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-extrabold uppercase tracking-widest text-fuchsia-400 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" />
-                Incident Briefing
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-mono font-extrabold uppercase tracking-widest text-fuchsia-400 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  Incident Briefing
+                </span>
+                {currentQuestion?.character && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-400/20">
+                    {currentQuestion.character}
+                  </span>
+                )}
+                {currentQuestion?.priority && (
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                    currentQuestion.priority === 'P4' ? 'bg-rose-500/20 text-rose-300 border-rose-400/40 animate-pulse' :
+                    currentQuestion.priority === 'P3' ? 'bg-amber-500/20 text-amber-300 border-amber-400/40' :
+                    'bg-slate-500/20 text-slate-300 border-slate-400/40'
+                  }`}>
+                    {currentQuestion.priority}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => speech.speak(currentQuestion?.text)}
                 className="ios-glass-btn p-1.5 rounded-xl text-slate-300 hover:text-white"

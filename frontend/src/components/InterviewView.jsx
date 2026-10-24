@@ -198,9 +198,25 @@ export default function InterviewView({
             {/* Conversational Question Teleprompter */}
             <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 sm:p-6 mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-cyan-400/90">
-                  {isFollowUp ? 'Follow-Up Inquiring' : `Interview Question ${currentIndex + 1}`}
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-cyan-400/90">
+                    {isFollowUp ? 'Follow-Up Inquiring' : `Interview Question ${currentIndex + 1}`}
+                  </span>
+                  {currentQuestion?.character && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-400/20">
+                      {currentQuestion.character}
+                    </span>
+                  )}
+                  {currentQuestion?.priority && (
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                      currentQuestion.priority === 'P4' ? 'bg-rose-500/15 text-rose-300 border-rose-400/30' :
+                      currentQuestion.priority === 'P3' ? 'bg-amber-500/15 text-amber-300 border-amber-400/30' :
+                      'bg-slate-500/15 text-slate-300 border-slate-400/30'
+                    }`}>
+                      {currentQuestion.priority}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => speech.speak(currentQuestion?.text)}
                   className="ios-glass-btn p-1.5 rounded-xl text-slate-300 hover:text-white"
@@ -375,27 +391,30 @@ export default function InterviewView({
             </p>
           </div>
 
-          {/* Interview Competencies Radar Preview Card */}
+          {/* Interview Competencies — 8 Scoring Dimensions */}
           <div className="ios-glass-card rounded-3xl p-5 border-white/10 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Scoring Pillars (Human-First)
+              Scoring Dimensions (0-100)
             </h4>
-            <div className="space-y-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
-                <span className="text-slate-300">Practical Solution</span>
-                <span className="text-cyan-400 font-mono font-bold">40%</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
-                <span className="text-slate-300">Problem-Solving Logic</span>
-                <span className="text-indigo-400 font-mono font-bold">30%</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
-                <span className="text-slate-300">Natural Communication</span>
-                <span className="text-purple-400 font-mono font-bold">30%</span>
-              </div>
+            <div className="space-y-1.5 text-xs">
+              {[
+                { label: 'Problem Solving', color: 'text-cyan-400' },
+                { label: 'Decision Making', color: 'text-indigo-400' },
+                { label: 'Communication', color: 'text-purple-400' },
+                { label: 'Etiquette', color: 'text-emerald-400' },
+                { label: 'Prioritisation', color: 'text-amber-400' },
+                { label: 'Accountability', color: 'text-rose-400' },
+                { label: 'Teamwork', color: 'text-teal-400' },
+                { label: 'Adaptability', color: 'text-fuchsia-400' },
+              ].map(({ label, color }) => (
+                <div key={label} className="p-2 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-between">
+                  <span className="text-slate-300">{label}</span>
+                  <span className={`${color} font-mono font-bold text-[10px]`}>0-100</span>
+                </div>
+              ))}
             </div>
             <p className="text-[10px] text-slate-400 leading-relaxed">
-              💡 Tip: Speak in natural, everyday language. Practical intuition is rewarded over rote definitions.
+              💡 Speak naturally. Practical intuition and clear communication are rewarded.
             </p>
           </div>
         </aside>

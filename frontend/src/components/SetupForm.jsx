@@ -77,6 +77,7 @@ export default function SetupForm({
   const [numQuestions, setNumQuestions] = useState(3);
   const [durationMin, setDurationMin] = useState(15);
   const [strictMode, setStrictMode] = useState(true);
+  const [pressureMode, setPressureMode] = useState(false);
 
   // Resume Upload State
   const [resumeData, setResumeData] = useState(null);
@@ -172,6 +173,7 @@ Projects:
       numQuestions: Number(numQuestions),
       durationMin: Number(durationMin),
       strictMode,
+      pressureMode,
       candidate_name: candidateName.trim() || 'Candidate',
       resume_text: resumeData?.resume_text || null,
       resume_skills: resumeData?.key_skills || [],
@@ -549,6 +551,32 @@ Projects:
                 <span
                   className={`block w-5 h-5 rounded-full bg-white transition-transform ${
                     strictMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Pressure Mode Toggle */}
+            <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Zap className="w-4 h-4 text-amber-400" />
+                  Pressure Mode (60s Timer)
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Each question has a strict 60-second response deadline. Tests decision quality under time pressure.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPressureMode(!pressureMode)}
+                className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
+                  pressureMode ? 'bg-amber-500' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`block w-5 h-5 rounded-full bg-white transition-transform ${
+                    pressureMode ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>
