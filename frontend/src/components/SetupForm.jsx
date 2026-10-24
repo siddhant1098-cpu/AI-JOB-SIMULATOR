@@ -203,7 +203,7 @@ Projects:
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-            {isInterview ? 'Corporate Candidate Assessment' : 'Workspace Scenario'}
+            {isInterview ? 'Interview Question and Answer' : 'Workspace Scenario'}
           </h1>
           <p className="text-slate-400 text-sm sm:text-base mt-1.5 max-w-2xl leading-relaxed">
             {isInterview 
