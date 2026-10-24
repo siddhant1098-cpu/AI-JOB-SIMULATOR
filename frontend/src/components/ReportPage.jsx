@@ -4,21 +4,30 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell
 } from 'recharts';
+import { 
+  Trophy, 
+  RotateCcw, 
+  CheckCircle2, 
+  AlertTriangle, 
+  ShieldCheck, 
+  TrendingUp, 
+  FileText, 
+  BarChart3, 
+  Sparkles, 
+  Compass, 
+  Target 
+} from 'lucide-react';
 
-/**
- * ReportPage — Minimal Pastel Theme
- * Comprehensive, encouraging career debrief with fair evaluations
- */
 const GRADE_STYLES = {
-  'A+': { text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', desc: 'Outstanding Readiness' },
-  A: { text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', desc: 'Strong Practical Acumen' },
-  B: { text: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-200', desc: 'Solid Foundation' },
-  C: { text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', desc: 'Growing Competence' },
-  Developing: { text: 'text-stone-700', bg: 'bg-stone-100', border: 'border-stone-200', desc: 'Great Potential to Build' },
-  'Needs Work': { text: 'text-stone-700', bg: 'bg-stone-100', border: 'border-stone-200', desc: 'Great Potential to Build' },
+  'A+': { text: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-400/40', desc: 'Exceptional Mastery & Readiness' },
+  A: { text: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-400/40', desc: 'Strong Practical Acumen' },
+  B: { text: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-400/40', desc: 'Solid Foundation & Competence' },
+  C: { text: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-400/40', desc: 'Growing Competence' },
+  Developing: { text: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-400/40', desc: 'Great Potential to Build' },
+  'Needs Work': { text: 'text-rose-400', bg: 'bg-rose-500/20', border: 'border-rose-400/40', desc: 'Great Potential to Build' },
 };
 
-const PASTEL_BARS = ['#9D8EC9', '#7DAF92', '#85B7EB'];
+const GLOW_BARS = ['#22d3ee', '#818cf8', '#c084fc'];
 
 export default function ReportPage({ session, onReset }) {
   const [report, setReport] = useState(null);
@@ -42,12 +51,14 @@ export default function ReportPage({ session, onReset }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
-        <div className="text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center mx-auto text-xl animate-pulse">
-            🌱
+      <div className="w-full h-full min-h-screen flex items-center justify-center p-4 bg-futuristic-mesh">
+        <div className="text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center mx-auto text-2xl animate-pulse shadow-[0_0_25px_rgba(99,102,241,0.4)]">
+            <Sparkles className="w-7 h-7 text-indigo-400" />
           </div>
-          <p className="text-stone-600 font-medium text-sm">Preparing your personal performance debrief…</p>
+          <p className="text-slate-300 font-mono text-sm tracking-wide">
+            Synthesizing Performance Evaluation & Telemetry…
+          </p>
         </div>
       </div>
     );
@@ -55,14 +66,14 @@ export default function ReportPage({ session, onReset }) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
-        <div className="bg-white border border-rose-200 rounded-3xl p-7 max-w-md text-center shadow-sm space-y-4">
-          <span className="text-3xl">⚠️</span>
-          <p className="text-stone-800 font-bold text-base">Debrief generation notice</p>
-          <p className="text-stone-500 text-xs leading-relaxed">{error}</p>
+      <div className="w-full h-full min-h-screen flex items-center justify-center p-4 bg-futuristic-mesh">
+        <div className="ios-glass-card rounded-3xl p-8 max-w-md text-center shadow-2xl space-y-4 border-rose-500/30">
+          <AlertTriangle className="w-10 h-10 text-rose-400 mx-auto" />
+          <h3 className="text-white font-bold text-lg">Evaluation Generation Notice</h3>
+          <p className="text-slate-400 text-xs leading-relaxed">{error}</p>
           <button
             onClick={onReset}
-            className="w-full py-3 bg-stone-900 text-white rounded-2xl text-xs font-semibold"
+            className="w-full py-3 ios-glass-btn-primary text-white rounded-2xl text-xs font-bold"
           >
             Start New Session
           </button>
@@ -82,9 +93,12 @@ export default function ReportPage({ session, onReset }) {
   } = report || {};
 
   const gStyle = GRADE_STYLES[grade] || GRADE_STYLES.A;
+  const flagList = session.flags || [];
+  const hasCheating = flagList.length > 0;
+  const isInterview = session.config.mode === 'interview';
 
   const radarData = [
-    { subject: 'Solution Quality', A: (skill_breakdown?.correctness || 8) * 10, fullMark: 100 },
+    { subject: 'Practical Solution', A: (skill_breakdown?.correctness || 8) * 10, fullMark: 100 },
     { subject: 'Problem Solving', A: (skill_breakdown?.problem_solving || 8) * 10, fullMark: 100 },
     { subject: 'Communication', A: (skill_breakdown?.communication || 8) * 10, fullMark: 100 },
   ];
@@ -96,305 +110,213 @@ export default function ReportPage({ session, onReset }) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-stone-800 relative pb-16">
-      {/* Background ambient pastel tones */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-100/40 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/3 left-10 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Top Header */}
-      <div className="bg-white/85 backdrop-blur-md border-b border-stone-200/80 px-4 py-3.5 sticky top-0 z-20">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
-            <div>
-              <h1 className="text-sm font-bold text-stone-900 leading-tight">Simulation Performance Debrief</h1>
-              <p className="text-[11px] text-stone-500 font-medium">{session.config.role} • {session.config.company}</p>
+    <div className="w-full min-h-screen p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto flex flex-col justify-start select-none font-sans bg-futuristic-mesh">
+      
+      {/* ── TOP HEADER ──────────────────────────────────────────────────────── */}
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-8">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 p-[1.5px] shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+            <div className="w-full h-full rounded-[14px] bg-[#0A0F1D] flex items-center justify-center">
+              <Trophy className="w-6 h-6 text-cyan-300" />
             </div>
           </div>
-          <button
-            onClick={onReset}
-            className="px-4 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-full text-xs font-semibold transition-all shadow-xs"
-          >
-            + New Simulation
-          </button>
-        </div>
-      </div>
-
-      <div className="max-w-3xl mx-auto px-4 py-7 space-y-6 relative z-10">
-        {/* Overall Grade Banner */}
-        <div className="bg-white/90 backdrop-blur-md border border-stone-200/90 rounded-3xl p-6 sm:p-8 text-center shadow-[0_4px_30px_rgba(0,0,0,0.02)] space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-xs font-medium">
-            <span>{session.config.mode === 'interview' ? '💼 Interview Simulation' : '🏢 Workplace Challenge'}</span>
-            <span>•</span>
-            <span className="capitalize">{session.config.difficulty} Level</span>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-tight">
+              Performance Debrief & Evaluation
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+              {session.config.candidate_name || 'Candidate'} • {session.config.role} • {session.config.company}
+            </p>
           </div>
-
-          <div className="pt-2">
-            <div className={`text-6xl sm:text-7xl font-black tracking-tight ${gStyle.text}`}>
-              {grade}
-            </div>
-            <div className="text-xs font-bold uppercase tracking-wider text-stone-400 mt-1">
-              {gStyle.desc}
-            </div>
-          </div>
-
-          <div className="text-3xl font-extrabold text-stone-900 pt-1">
-            {overall_score.toFixed(1)}
-            <span className="text-base font-normal text-stone-400"> / 10 overall</span>
-          </div>
-
-          <p className="text-stone-500 text-xs max-w-md mx-auto leading-relaxed pt-1">
-            Evaluated on practical common sense, composed problem-solving, and conversational clarity.
-          </p>
-
-          {integrity_note && (
-            <div className="pt-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
-                🛡️ {integrity_note}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex bg-stone-200/60 p-1 rounded-2xl max-w-sm mx-auto">
-          {['overview', 'questions'].map((t) => (
+        <button
+          onClick={onReset}
+          className="ios-glass-btn-primary px-5 py-2.5 rounded-2xl text-xs font-bold text-white flex items-center gap-2 shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>New Simulation</span>
+        </button>
+      </header>
+
+      {/* ── MAIN CONTENT (Wide responsive grid) ──────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
+        
+        {/* ── LEFT SUMMARY COCKPIT (lg:col-span-5) ────────────────────────────── */}
+        <div className="lg:col-span-5 flex flex-col gap-6 w-full">
+          
+          {/* Overall Grade Card */}
+          <div className="ios-glass-card rounded-3xl p-6 sm:p-8 text-center space-y-4 border-white/15 shadow-[0_0_40px_rgba(0,0,0,0.4)]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full ios-glass text-xs font-mono text-slate-300">
+              <span>{isInterview ? '🎙️ Studio Interview' : '⚡ Incident Workspace'}</span>
+              <span>•</span>
+              <span className="capitalize">{session.config.difficulty} Tier</span>
+            </div>
+
+            <div className="py-2">
+              <div className={`text-6xl sm:text-7xl font-black tracking-tight ${gStyle.text} drop-shadow-[0_0_25px_rgba(34,211,238,0.3)]`}>
+                {grade}
+              </div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mt-2">
+                {gStyle.desc}
+              </div>
+            </div>
+
+            <div className="text-3xl font-extrabold text-white">
+              {overall_score.toFixed(1)}
+              <span className="text-base font-normal text-slate-400"> / 10 overall</span>
+            </div>
+
+            <p className="text-slate-400 text-xs leading-relaxed max-w-sm mx-auto">
+              Scored on practical initiative, calm crisis problem-solving, and conversational clarity.
+            </p>
+
+            {integrity_note && (
+              <div className="pt-2">
+                <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-1.5 rounded-full border ${
+                  hasCheating 
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-400/40' 
+                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                }`}>
+                  {hasCheating ? <AlertTriangle className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                  <span>{integrity_note}</span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Competency Radar & Distribution */}
+          <div className="ios-glass-card rounded-3xl p-6 border-white/10 space-y-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+              <BarChart3 className="w-4 h-4 text-cyan-400" />
+              Competency Radar Telemetry
+            </span>
+
+            <div className="h-52 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarData}>
+                  <PolarGrid stroke="rgba(255,255,255,0.15)" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} />
+                  <Radar dataKey="A" stroke="#22d3ee" fill="#22d3ee" fillOpacity={0.25} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* ── RIGHT DEEP-DIVE PANELS (lg:col-span-7) ─────────────────────────── */}
+        <div className="lg:col-span-7 flex flex-col gap-6 w-full">
+          
+          {/* Navigation Tabs */}
+          <div className="ios-glass p-1.5 rounded-2xl flex items-center gap-1 max-w-md">
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${
-                tab === t
-                  ? 'bg-white text-stone-900 shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900'
+              onClick={() => setTab('overview')}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                tab === 'overview'
+                  ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border border-white/30 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              {t === 'overview' ? '📈 Executive Summary' : '📝 Per-Question Review'}
+              📈 Strategic Summary
             </button>
-          ))}
-        </div>
+            <button
+              onClick={() => setTab('questions')}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                tab === 'questions'
+                  ? 'bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border border-white/30 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              📝 Per-Question Review
+            </button>
+          </div>
 
-        {tab === 'overview' && (
-          <div className="space-y-5">
-            {/* Skills Charts */}
-            <div className="bg-white/90 border border-stone-200/90 rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                  Competency Breakdown
-                </p>
-                <span className="text-xs text-stone-400 font-medium">Weighted Balance</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-stone-50/70 rounded-2xl p-3 border border-stone-100">
-                  <p className="text-[11px] font-bold text-stone-400 text-center uppercase tracking-wider mb-1">
-                    Radar Profile
-                  </p>
-                  <ResponsiveContainer width="100%" height={170}>
-                    <RadarChart data={radarData}>
-                      <PolarGrid stroke="#E2DED5" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717A', fontSize: 10, fontWeight: 500 }} />
-                      <Radar dataKey="A" stroke="#9D8EC9" fill="#9D8EC9" fillOpacity={0.35} strokeWidth={2} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="bg-stone-50/70 rounded-2xl p-3 border border-stone-100">
-                  <p className="text-[11px] font-bold text-stone-400 text-center uppercase tracking-wider mb-1">
-                    Score Distribution
-                  </p>
-                  <ResponsiveContainer width="100%" height={170}>
-                    <BarChart data={barData} layout="vertical">
-                      <XAxis type="number" domain={[0, 10]} tick={{ fill: '#71717A', fontSize: 10 }} />
-                      <YAxis type="category" dataKey="name" tick={{ fill: '#71717A', fontSize: 9, fontWeight: 500 }} width={85} />
-                      <Tooltip contentStyle={{ background: '#FFFFFF', border: '1px solid #E2DED5', borderRadius: 12, fontSize: 11 }} />
-                      <Bar dataKey="score" radius={[0, 6, 6, 0]}>
-                        {barData.map((_, i) => (
-                          <Cell key={i} fill={PASTEL_BARS[i % PASTEL_BARS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* Strengths & Growth Areas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-[#F2FAF5] border border-[#D4EDE0] rounded-3xl p-5 space-y-3">
-                <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs uppercase tracking-wider">
-                  <span>🌿</span>
-                  <span>Standout Strengths</span>
-                </div>
+          {tab === 'overview' ? (
+            <div className="space-y-6">
+              {/* Standout Strengths */}
+              <div className="ios-glass-card rounded-3xl p-6 border-emerald-500/20 space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  Key Demonstrated Strengths
+                </span>
                 <div className="space-y-2">
-                  {strengths.map((s, i) => (
-                    <div key={i} className="text-xs text-stone-700 leading-relaxed flex items-start gap-2 bg-white/70 p-2.5 rounded-xl border border-emerald-100">
-                      <span className="text-emerald-600 font-bold">✓</span>
-                      <span>{s}</span>
+                  {strengths.map((str, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-slate-200 flex items-start gap-2.5">
+                      <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                      <span className="leading-relaxed">{str}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-[#FFF9F2] border border-[#FDE5CA] rounded-3xl p-5 space-y-3">
-                <div className="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
-                  <span>☀️</span>
-                  <span>Growth Opportunities</span>
-                </div>
+              {/* Gentle Growth Areas */}
+              <div className="ios-glass-card rounded-3xl p-6 border-amber-500/20 space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-amber-400" />
+                  Empathetic Growth Opportunities
+                </span>
                 <div className="space-y-2">
-                  {weaknesses.map((w, i) => (
-                    <div key={i} className="text-xs text-stone-700 leading-relaxed flex items-start gap-2 bg-white/70 p-2.5 rounded-xl border border-amber-100">
-                      <span className="text-amber-600 font-bold">→</span>
-                      <span>{w}</span>
+                  {weaknesses.map((w, idx) => (
+                    <div key={idx} className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-slate-200 flex items-start gap-2.5">
+                      <span className="text-amber-400 font-bold mt-0.5">💡</span>
+                      <span className="leading-relaxed">{w}</span>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Recommended Next Steps */}
-            <div className="bg-[#F6F3FE] border border-[#E2DBFA] rounded-3xl p-5 sm:p-6 space-y-3">
-              <div className="flex items-center gap-2 text-purple-900 font-bold text-xs uppercase tracking-wider">
-                <span>🚀</span>
-                <span>Actionable Development Steps</span>
-              </div>
-              <div className="space-y-2">
-                {next_steps.map((step, i) => (
-                  <div key={i} className="text-xs text-stone-700 leading-relaxed flex items-start gap-2.5 bg-white/80 p-3 rounded-2xl border border-purple-100/80">
-                    <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] shrink-0">
-                      {i + 1}
-                    </span>
-                    <span>{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Strict Proctoring Integrity Audit */}
-            <div className="bg-white/90 border border-stone-200/90 rounded-3xl p-5 sm:p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xl">🛡️</span>
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-stone-800">
-                      Anti-Cheat Proctor Audit
-                    </p>
-                    <p className="text-[11px] text-stone-400">Continuous AI surveillance log</p>
-                  </div>
-                </div>
-                {(session.flags || []).length === 0 ? (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    ✓ Verified Clean (0 flags)
+              {/* Actionable Next Steps */}
+              {next_steps && next_steps.length > 0 && (
+                <div className="ios-glass-card rounded-3xl p-6 border-indigo-500/20 space-y-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+                    <Target className="w-4 h-4 text-indigo-400" />
+                    Recommended Development Next Steps
                   </span>
-                ) : (
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                    ⚠️ {session.flags.length} Flag{session.flags.length > 1 ? 's' : ''} Logged
-                  </span>
-                )}
-              </div>
-
-              {/* Categorized observation counters */}
-              {(() => {
-                const flags = session.flags || [];
-                const phoneCount = flags.filter((f) => f.toLowerCase().includes('phone') || f.toLowerCase().includes('mobile')).length;
-                const copyCount = flags.filter((f) => f.toLowerCase().includes('copy') || f.toLowerCase().includes('paste') || f.toLowerCase().includes('shortcut')).length;
-                const tabCount = flags.filter((f) => f.toLowerCase().includes('tab') || f.toLowerCase().includes('focus')).length;
-                const faceCount = flags.filter((f) => f.toLowerCase().includes('face') || f.toLowerCase().includes('dark')).length;
-
-                return (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-                    <div className={`p-3 rounded-2xl border ${phoneCount > 0 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-stone-50/70 border-stone-200/80 text-stone-600'}`}>
-                      <div className="text-lg mb-0.5">📱</div>
-                      <div className="font-extrabold text-sm">{phoneCount}</div>
-                      <div className="text-[10px] text-stone-400 font-medium">Mobile Phone</div>
-                    </div>
-                    <div className={`p-3 rounded-2xl border ${copyCount > 0 ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-stone-50/70 border-stone-200/80 text-stone-600'}`}>
-                      <div className="text-lg mb-0.5">📋</div>
-                      <div className="font-extrabold text-sm">{copyCount}</div>
-                      <div className="text-[10px] text-stone-400 font-medium">Clipboard Lock</div>
-                    </div>
-                    <div className={`p-3 rounded-2xl border ${tabCount > 0 ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-stone-50/70 border-stone-200/80 text-stone-600'}`}>
-                      <div className="text-lg mb-0.5">📑</div>
-                      <div className="font-extrabold text-sm">{tabCount}</div>
-                      <div className="text-[10px] text-stone-400 font-medium">Tab Switch</div>
-                    </div>
-                    <div className={`p-3 rounded-2xl border ${faceCount > 0 ? 'bg-yellow-50 border-yellow-200 text-yellow-800' : 'bg-stone-50/70 border-stone-200/80 text-stone-600'}`}>
-                      <div className="text-lg mb-0.5">👤</div>
-                      <div className="font-extrabold text-sm">{faceCount}</div>
-                      <div className="text-[10px] text-stone-400 font-medium">Face Check</div>
-                    </div>
+                  <div className="space-y-2">
+                    {next_steps.map((step, idx) => (
+                      <div key={idx} className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-slate-200 flex items-start gap-2.5">
+                        <span className="text-indigo-400 font-bold mt-0.5">➔</span>
+                        <span className="leading-relaxed">{step}</span>
+                      </div>
+                    ))}
                   </div>
-                );
-              })()}
-
-              {(session.flags || []).length > 0 && (
-                <div className="bg-stone-50/80 border border-stone-200/70 rounded-2xl p-3 max-h-36 overflow-y-auto space-y-1">
-                  <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1">
-                    Session Proctor Log
-                  </p>
-                  {session.flags.map((f, i) => (
-                    <div key={i} className="text-[11px] text-stone-600 font-mono flex items-start gap-1.5">
-                      <span className="text-amber-500">•</span>
-                      <span>{f}</span>
-                    </div>
-                  ))}
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {tab === 'questions' && (
-          <div className="space-y-4">
-            {session.answers.map((a, i) => {
-              const score = session.scores[i] || {};
-              return (
-                <div key={i} className="bg-white/90 border border-stone-200/90 rounded-3xl p-5 sm:p-6 space-y-3 shadow-2xs">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-bold text-stone-800 leading-snug">
-                      {i + 1}. {a.question?.text}
-                    </p>
-                    <div className="text-right shrink-0">
-                      <span className="px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-black text-xs">
-                        {score.total?.toFixed(1) || '8.5'}/10
+          ) : (
+            /* Per-Question Breakdown */
+            <div className="space-y-4">
+              {session.answers.map((item, idx) => {
+                const s = session.scores[idx] || {};
+                return (
+                  <div key={idx} className="ios-glass-card rounded-3xl p-6 border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-cyan-400">
+                        Part {idx + 1}
                       </span>
+                      {s.score && (
+                        <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+                          {s.score.toFixed(1)} / 10
+                        </span>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="bg-stone-50/80 border border-stone-200/60 rounded-2xl p-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
-                      Your Spoken Answer
+                    <p className="text-sm font-semibold text-white">
+                      "{item.question}"
                     </p>
-                    <p className="text-xs text-stone-700 italic leading-relaxed">
-                      "{a.answer}"
-                    </p>
+                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 text-xs text-slate-300 leading-relaxed font-mono">
+                      {item.answer}
+                    </div>
+                    {s.feedback && (
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        <strong className="text-slate-300">Feedback:</strong> {s.feedback}
+                      </p>
+                    )}
                   </div>
-
-                  {score.feedback && (
-                    <div className="bg-[#F2FAF5] border border-[#D4EDE0] rounded-2xl p-3.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1">
-                        Mentor Feedback
-                      </p>
-                      <p className="text-xs text-stone-700 leading-relaxed">
-                        {score.feedback}
-                      </p>
-                    </div>
-                  )}
-
-                  {score.expected_answer && (
-                    <div className="bg-[#F0F5FD] border border-[#D5E3FA] rounded-2xl p-3.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-blue-800 mb-1">
-                        Ideal Framing
-                      </p>
-                      <p className="text-xs text-stone-700 leading-relaxed">
-                        {score.expected_answer}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

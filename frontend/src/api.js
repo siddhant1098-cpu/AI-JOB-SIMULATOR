@@ -19,3 +19,17 @@ export const evaluateAnswer = (config, question, answer, questionIndex) =>
   post('/api/evaluate', { config, question, answer, questionIndex });
 export const generateReport = (config, qa_pairs, flags) =>
   post('/api/report', { config, qa_pairs, flags });
+
+export async function uploadAndParseResume(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE}/api/resume/parse`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || 'Failed to parse resume PDF');
+  }
+  return res.json();
+}

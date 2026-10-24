@@ -1,7 +1,8 @@
 import React from 'react';
+import { Volume2, Sliders, Radio } from 'lucide-react';
 
 /**
- * VoicePanel — Minimal Pastel Voice Controls
+ * VoicePanel — Futuristic iOS Glass Voice Engine Controls
  */
 export default function VoicePanel({ speech }) {
   const { voices, voiceSettings, updateVoiceSettings } = speech;
@@ -12,39 +13,40 @@ export default function VoicePanel({ speech }) {
   const displayVoices = englishVoices.length ? englishVoices : voices;
 
   return (
-    <div className="bg-white/95 backdrop-blur-md border border-stone-200/90 rounded-2xl p-4 space-y-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
+    <div className="ios-glass-card rounded-2xl p-4 space-y-3.5 border-white/20 shadow-2xl text-slate-200">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-wider text-stone-500">
-          🎙️ Conversational Voice
+        <p className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+          <Radio className="w-3.5 h-3.5 text-cyan-400" />
+          Conversational Audio Synthesizer
         </p>
-        <span className="text-[11px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
-          Natural Cadence
+        <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded-full border border-cyan-400/30">
+          0.95x Human Cadence
         </span>
       </div>
 
-      {/* Voice picker */}
+      {/* Voice model selector */}
       <div>
-        <label className="block text-xs text-stone-500 mb-1 font-medium">Voice Model</label>
+        <label className="block text-[11px] text-slate-400 mb-1 font-semibold">Voice Model</label>
         <select
           value={voiceSettings.voiceURI || ''}
           onChange={(e) => updateVoiceSettings({ voiceURI: e.target.value })}
-          className="w-full bg-stone-50 border border-stone-200 text-stone-800 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-200 font-medium"
+          className="w-full ios-glass-input rounded-xl px-2.5 py-1.5 text-xs text-white"
         >
-          <option value="">Auto (Best Natural Human Voice)</option>
+          <option value="" className="bg-slate-900 text-white">Auto (Best Natural Neural Voice)</option>
           {displayVoices.map((v) => (
-            <option key={v.voiceURI} value={v.voiceURI}>
+            <option key={v.voiceURI} value={v.voiceURI} className="bg-slate-900 text-white">
               {v.name} ({v.lang})
             </option>
           ))}
         </select>
       </div>
 
-      {/* Sliders in 2 cols */}
+      {/* Sliders */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="flex justify-between text-xs text-stone-500 mb-1">
+          <div className="flex justify-between text-[11px] text-slate-400 mb-1 font-semibold">
             <span>Pace</span>
-            <span className="font-mono font-semibold text-stone-800">
+            <span className="font-mono text-cyan-300">
               {voiceSettings.rate?.toFixed(2)}x
             </span>
           </div>
@@ -55,14 +57,14 @@ export default function VoicePanel({ speech }) {
             step="0.05"
             value={voiceSettings.rate || 0.95}
             onChange={(e) => updateVoiceSettings({ rate: parseFloat(e.target.value) })}
-            className="w-full accent-purple-600 cursor-pointer"
+            className="w-full accent-cyan-400 cursor-pointer"
           />
         </div>
 
         <div>
-          <div className="flex justify-between text-xs text-stone-500 mb-1">
+          <div className="flex justify-between text-[11px] text-slate-400 mb-1 font-semibold">
             <span>Pitch</span>
-            <span className="font-mono font-semibold text-stone-800">
+            <span className="font-mono text-indigo-300">
               {voiceSettings.pitch?.toFixed(1)}
             </span>
           </div>
@@ -73,20 +75,22 @@ export default function VoicePanel({ speech }) {
             step="0.05"
             value={voiceSettings.pitch || 1.0}
             onChange={(e) => updateVoiceSettings({ pitch: parseFloat(e.target.value) })}
-            className="w-full accent-purple-600 cursor-pointer"
+            className="w-full accent-indigo-400 cursor-pointer"
           />
         </div>
       </div>
 
       <button
+        type="button"
         onClick={() =>
           speech.speak(
-            "Hello! I am your simulation partner today. Take your time, breathe, and let's have a great conversation."
+            "Hello! I am your AI partner today. Take your time, breathe, and let's work through this together."
           )
         }
-        className="w-full py-2 bg-stone-100 hover:bg-stone-200/80 text-stone-700 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
+        className="w-full py-2 ios-glass-btn rounded-xl text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-1.5"
       >
-        <span>🔊</span> Test Natural Voice
+        <Volume2 className="w-3.5 h-3.5 text-cyan-300" />
+        <span>Test Spoken Voice</span>
       </button>
     </div>
   );
