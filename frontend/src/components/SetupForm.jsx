@@ -23,7 +23,8 @@ import {
   MessageSquare,
   Shield,
   ChevronRight,
-  Timer
+  Timer,
+  HelpCircle
 } from 'lucide-react';
 
 const DOMAINS = [
@@ -685,6 +686,72 @@ Projects:
                       }`}
                     >
                       {lvl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Number of Interview Questions */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-cyan-400" />
+                    <span>Number of Questions</span>
+                  </label>
+                  <span className="text-xs font-mono text-cyan-300 font-bold">{numQuestions} Questions</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2.5">
+                  {[
+                    { val: 3, label: '3 Qs', sub: 'Quick (~10m)' },
+                    { val: 5, label: '5 Qs', sub: 'Standard (~15m)' },
+                    { val: 8, label: '8 Qs', sub: 'In-Depth (~25m)' },
+                    { val: 10, label: '10 Qs', sub: 'Mastery (~35m)' }
+                  ].map((opt) => (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      onClick={() => setNumQuestions(opt.val)}
+                      className={`p-3 rounded-xl text-center transition-all flex flex-col items-center justify-center ${
+                        Number(numQuestions) === opt.val
+                          ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 border border-cyan-400/40 text-white shadow-lg'
+                          : 'dash-btn-secondary text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="text-xs font-bold">{opt.label}</span>
+                      <span className="text-[10px] opacity-75 mt-0.5">{opt.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Assessment Duration */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-indigo-400" />
+                    <span>Assessment Duration</span>
+                  </label>
+                  <span className="text-xs font-mono text-indigo-300 font-bold">{durationMin} Minutes</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {[
+                    { val: 10, label: '10m' },
+                    { val: 15, label: '15m' },
+                    { val: 20, label: '20m' },
+                    { val: 30, label: '30m' },
+                    { val: 45, label: '45m' }
+                  ].map((dur) => (
+                    <button
+                      key={dur.val}
+                      type="button"
+                      onClick={() => setDurationMin(dur.val)}
+                      className={`py-2.5 rounded-xl text-xs font-bold transition-all text-center ${
+                        Number(durationMin) === dur.val
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border border-indigo-400/40 text-white shadow-lg'
+                          : 'dash-btn-secondary text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {dur.label}
                     </button>
                   ))}
                 </div>
