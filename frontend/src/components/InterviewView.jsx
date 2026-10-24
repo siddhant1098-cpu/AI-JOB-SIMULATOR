@@ -50,8 +50,8 @@ export default function InterviewView({
   handleCutAttempt,
   handleContextMenu
 }) {
-  const { config, questions, currentIndex } = session;
-  const { videoRef, cameraReady, cameraError, faceCount, phoneDetected } = camera;
+  const { config = {}, questions = [], currentIndex = 0 } = session || {};
+  const { videoRef, cameraReady, cameraError, faceCount = 1, phoneDetected = false } = camera || {};
 
   const mm = String(Math.floor(remainingSec / 60)).padStart(2, '0');
   const ss = String(remainingSec % 60).padStart(2, '0');

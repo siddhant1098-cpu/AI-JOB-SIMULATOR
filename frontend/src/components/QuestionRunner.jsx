@@ -50,9 +50,30 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
 
   const camera = useCamera(handleFlag, isStrict);
 
-  const currentQuestion = isFollowUp
+  useEffect(() => {
+    if (isStrict) {
+      camera.startCamera();
+    }
+    return () => {
+      camera.stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStrict]);
+
+  const rawQ = isFollowUp
     ? { id: `fu-${currentIndex}`, type: 'follow_up', text: followUp }
-    : questions[currentIndex];
+    : (questions && questions[currentIndex]) || {};
+
+  const questionText = rawQ.text || rawQ.initial_dialogue || rawQ.scenario_context || rawQ.objective || rawQ.question || rawQ.scenario || rawQ.title || 'Please explain your strategy and practical response for this scenario.';
+
+  const currentQuestion = {
+    ...rawQ,
+    id: rawQ.id || `q-${currentIndex}`,
+    text: questionText,
+    character: rawQ.character || 'Senior Stakeholder',
+    character_authority_level: rawQ.character_authority_level || 3,
+    priority: rawQ.priority || 'P2',
+  };
 
   // ── Strict Mode: Clipboard Lock ─────────────────────────────────────────────
   const handleCopyAttempt = useCallback((e) => {
@@ -140,17 +161,21 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
 
   // ── Question Lifecycle ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (!currentQuestion) return;
+    if (!currentQuestion?.text) return;
 
     answeredRef.current = false;
     setFeedback(null);
     setEditedTranscript('');
-    speech.resetTranscript();
+    if (typeof speech.resetTranscript === 'function') {
+      speech.resetTranscript();
+    } else if (typeof speech.setTranscript === 'function') {
+      speech.setTranscript('');
+    }
 
     setPhase('speaking');
     speech.speak(currentQuestion.text, () => {
       setPhase('listening');
-      speech.startListening();
+      speech.startListening().catch(() => {});
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, isFollowUp]);
@@ -228,10 +253,14 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   // Redo / Clear answer
   const handleRedo = () => {
     answeredRef.current = false;
-    speech.resetTranscript();
+    if (typeof speech.resetTranscript === 'function') {
+      speech.resetTranscript();
+    } else if (typeof speech.setTranscript === 'function') {
+      speech.setTranscript('');
+    }
     setEditedTranscript('');
     setPhase('listening');
-    speech.startListening();
+    speech.startListening().catch(() => {});
   };
 
   // Next question navigation

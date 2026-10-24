@@ -54,8 +54,8 @@ export default function WorkspaceView({
   handleCutAttempt,
   handleContextMenu
 }) {
-  const { config, questions, currentIndex } = session;
-  const { videoRef, cameraReady, cameraError, faceCount, phoneDetected } = camera;
+  const { config = {}, questions = [], currentIndex = 0 } = session || {};
+  const { videoRef, cameraReady, cameraError, faceCount = 1, phoneDetected = false } = camera || {};
 
   const [activeTab, setActiveTab] = useState('action_plan'); // action_plan | terminal | stakeholders
 

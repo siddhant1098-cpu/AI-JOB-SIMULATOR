@@ -53,9 +53,10 @@ export function useCamera(onFlag, strictMode = true) {
   }, [onFlag]);
 
   const triggerBlur = useCallback((reason) => {
+    if (!strictMode) return;
     setIsBlurred(true);
     setBlurReason(reason);
-  }, []);
+  }, [strictMode]);
 
   const clearBlur = useCallback(() => {
     setIsBlurred(false);
@@ -153,7 +154,7 @@ export function useCamera(onFlag, strictMode = true) {
 
   const runDetection = useCallback(() => {
     const video = videoRef.current;
-    if (!video || video.readyState < 2) return;
+    if (!video || video.readyState < 2 || !cameraReady) return;
     const now = performance.now();
 
     // 1. Dark frame check

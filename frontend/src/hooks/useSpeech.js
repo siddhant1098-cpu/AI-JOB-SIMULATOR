@@ -87,46 +87,57 @@ export function useSpeech() {
     });
   }, []);
 
-  /** Speak text with natural cadence. Returns Promise resolving when speech ends. */
-  const speak = useCallback((text) => {
+  const resetTranscript = useCallback(() => {
+    transcriptRef.current = '';
+    setTranscript('');
+  }, []);
+
+  /** Speak text with natural cadence. Returns Promise resolving when speech ends or calls onEnd callback. */
+  const speak = useCallback((text, onEnd) => {
     return new Promise((resolve) => {
-      if (!window.speechSynthesis) {
+      const handleDone = () => {
+        setIsSpeaking(false);
+        if (typeof onEnd === 'function') onEnd();
         resolve();
+      };
+
+      if (!window.speechSynthesis) {
+        handleDone();
         return;
       }
-      window.speechSynthesis.cancel();
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
 
       // Clean speech text (strip markdown symbols like *, _, #, backticks)
-      const cleanText = text
+      const safeText = String(text || '')
         .replace(/[*_#`~]/g, '')
         .replace(/\[.*?\]/g, '')
         .trim();
 
-      if (!cleanText) {
-        resolve();
+      if (!safeText) {
+        handleDone();
         return;
       }
 
-      const utter = new SpeechSynthesisUtterance(cleanText);
-      const selectedVoice =
-        voices.find((v) => v.voiceURI === voiceSettings.voiceURI) ||
-        findBestHumanVoice(voices);
+      try {
+        const utter = new SpeechSynthesisUtterance(safeText);
+        const selectedVoice =
+          voices.find((v) => v.voiceURI === voiceSettings.voiceURI) ||
+          findBestHumanVoice(voices);
 
-      if (selectedVoice) utter.voice = selectedVoice;
-      utter.rate = voiceSettings.rate || 0.95;
-      utter.pitch = voiceSettings.pitch || 1.0;
+        if (selectedVoice) utter.voice = selectedVoice;
+        utter.rate = voiceSettings.rate || 0.95;
+        utter.pitch = voiceSettings.pitch || 1.0;
 
-      utter.onstart = () => setIsSpeaking(true);
-      utter.onend = () => {
-        setIsSpeaking(false);
-        resolve();
-      };
-      utter.onerror = () => {
-        setIsSpeaking(false);
-        resolve();
-      };
+        utter.onstart = () => setIsSpeaking(true);
+        utter.onend = handleDone;
+        utter.onerror = handleDone;
 
-      window.speechSynthesis.speak(utter);
+        window.speechSynthesis.speak(utter);
+      } catch (e) {
+        handleDone();
+      }
     });
   }, [voices, voiceSettings]);
 
@@ -206,6 +217,7 @@ export function useSpeech() {
     stopListening,
     transcript,
     setTranscript,
+    resetTranscript,
     isSpeaking,
     isListening,
     voices,
