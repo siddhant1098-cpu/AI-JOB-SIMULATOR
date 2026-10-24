@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { uploadAndParseResume } from '../api';
+import CorporateLogo from './CorporateLogo';
 import { 
   Video, 
   Terminal, 
@@ -183,34 +184,36 @@ Projects:
   return (
     <div className="w-full min-h-screen py-8 px-4 sm:px-8 lg:px-12 flex flex-col justify-center max-w-7xl mx-auto select-none">
       
-      {/* ── TOP HEADER & MODE INDICATOR ─────────────────────────────────────── */}
+      {/* ── TOP CORPORATE HEADER & MODE INDICATOR ──────────────────────────── */}
       <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-6">
         <div>
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className={`text-[11px] font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
+          <div className="flex flex-wrap items-center gap-2.5 mb-3">
+            <CorporateLogo size="sm" showText={true} subtitle="Workforce Intelligence Division" />
+            <span className="hidden sm:inline-block text-slate-500">•</span>
+            <span className={`text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
               isInterview 
                 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-400/30' 
                 : 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-400/30'
             }`}>
-              {isInterview ? '🎙️ Virtual Studio Setup' : '⚡ Mission Incident Command'}
+              {isInterview ? 'Corporate Telepresence Suite' : 'Incident Command Center'}
             </span>
-            <span className="text-[11px] font-mono text-slate-400">
-              On-Device Anti-Cheat Engine Active
+            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              🛡️ Integrity Protocol Active
             </span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-            {isInterview ? 'AI Job Simulator' : 'Crisis Ops Simulator'}
+            {isInterview ? 'Corporate Candidate Assessment' : 'Enterprise Crisis Operations Simulator'}
           </h1>
-          <p className="text-slate-400 text-sm sm:text-base mt-1 max-w-2xl">
+          <p className="text-slate-400 text-sm sm:text-base mt-1.5 max-w-2xl leading-relaxed">
             {isInterview 
-              ? 'Practice authentic conversational interviews with a real-time voice telepresence AI and on-device integrity proctoring.'
-              : 'Test your leadership under pressure with live workplace crisis simulations, simulated stakeholder channels, and immediate scoring.'}
+              ? 'Standardized enterprise interview protocol featuring generative AI telepresence, real-time voice analysis, and on-device integrity auditing.'
+              : 'High-stakes workplace crisis simulation platform testing cross-functional incident response, stakeholder management, and executive resolution.'}
           </p>
         </div>
 
         {/* Mode Switcher Pill on Top (also accessible via Left Rail) */}
-        <div className="ios-glass p-1.5 rounded-2xl flex items-center gap-1 shrink-0 self-start md:self-auto">
+        <div className="ios-glass p-1.5 rounded-2xl flex items-center gap-1 shrink-0 self-start md:self-auto border-white/15">
           <button
             type="button"
             onClick={() => handleModeSwitch('interview')}

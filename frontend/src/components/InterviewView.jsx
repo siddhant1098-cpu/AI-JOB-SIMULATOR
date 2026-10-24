@@ -13,9 +13,11 @@ import {
   CheckCircle2, 
   AlertTriangle,
   User,
-  Radio
+  Radio,
+  Building2
 } from 'lucide-react';
 import FeedbackCard from './FeedbackCard';
+import CorporateLogo from './CorporateLogo';
 
 /**
  * InterviewView — Futuristic Executive Telepresence & Virtual Interview Studio
@@ -67,24 +69,22 @@ export default function InterviewView({
       onCut={handleCutAttempt}
       onContextMenu={handleContextMenu}
     >
-      {/* ── TOP GLASS STATUS BAR ────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 ios-glass border-b border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
-        {/* Left: Role & Round Info */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-            <Video className="w-5 h-5" />
-          </div>
+      {/* ── TOP CORPORATE STATUS BAR ───────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 ios-glass border-b border-white/10 px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
+        {/* Left: Corporate Logo & Role Information */}
+        <div className="flex items-center gap-3.5">
+          <CorporateLogo size="sm" showText={false} />
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
+              <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight">
                 {config.role}
               </h2>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
-                Studio Mode
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+                Corporate Room #104
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              {config.company} • {config.domain}
+              {config.company} • Division: {config.domain}
             </p>
           </div>
         </div>

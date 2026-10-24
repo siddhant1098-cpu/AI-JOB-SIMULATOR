@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { generateReport } from '../api';
+import CorporateLogo from './CorporateLogo';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell
@@ -112,22 +113,10 @@ export default function ReportPage({ session, onReset }) {
   return (
     <div className="w-full min-h-screen p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto flex flex-col justify-start select-none font-sans bg-futuristic-mesh">
       
-      {/* ── TOP HEADER ──────────────────────────────────────────────────────── */}
+      {/* ── TOP CORPORATE HEADER ───────────────────────────────────────────── */}
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-8">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 p-[1.5px] shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-            <div className="w-full h-full rounded-[14px] bg-[#0A0F1D] flex items-center justify-center">
-              <Trophy className="w-6 h-6 text-cyan-300" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight leading-tight">
-              Performance Debrief & Evaluation
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
-              {session.config.candidate_name || 'Candidate'} • {session.config.role} • {session.config.company}
-            </p>
-          </div>
+          <CorporateLogo size="md" showText={true} subtitle="Confidential Talent Evaluation Dossier" />
         </div>
 
         <button

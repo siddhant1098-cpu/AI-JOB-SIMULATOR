@@ -20,6 +20,7 @@ import {
   Sliders
 } from 'lucide-react';
 import FeedbackCard from './FeedbackCard';
+import CorporateLogo from './CorporateLogo';
 
 /**
  * WorkspaceView — Futuristic Incident Command Center & Workplace Crisis Workbench
@@ -82,13 +83,11 @@ export default function WorkspaceView({
       onCut={handleCutAttempt}
       onContextMenu={handleContextMenu}
     >
-      {/* ── TOP INCIDENT COMMAND STRIP ──────────────────────────────────────── */}
+      {/* ── TOP CORPORATE OPERATIONS STRIP ─────────────────────────────────── */}
       <header className="sticky top-0 z-40 ios-glass border-b border-fuchsia-500/20 px-4 sm:px-8 py-3 flex items-center justify-between gap-4">
-        {/* Left: Incident ID & Severity */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-fuchsia-500/20 border border-fuchsia-400/40 flex items-center justify-center text-fuchsia-300 shadow-[0_0_20px_rgba(217,70,239,0.3)]">
-            <Terminal className="w-5 h-5" />
-          </div>
+        {/* Left: Corporate Logo & Incident ID */}
+        <div className="flex items-center gap-3.5">
+          <CorporateLogo size="sm" showText={false} />
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-extrabold text-fuchsia-400">
@@ -103,7 +102,7 @@ export default function WorkspaceView({
               </span>
             </div>
             <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-tight">
-              {config.role} Command Console
+              {config.company} • Crisis Operations Command
             </h2>
           </div>
         </div>
