@@ -18,13 +18,26 @@ import {
   Briefcase, 
   UserCheck, 
   Layers,
-  ArrowRight
+  ArrowRight,
+  User,
+  MessageSquare,
+  Shield,
+  ChevronRight
 } from 'lucide-react';
 
 const DOMAINS = [
-  'Software Engineering', 'Event Management', 'Marketing', 'Finance',
-  'Healthcare', 'Human Resources', 'Sales', 'Operations', 'Education',
-  'Legal', 'Supply Chain', 'Customer Success',
+  'Software Engineering',
+  'Marketing',
+  'Finance',
+  'Healthcare',
+  'Human Resources',
+  'Sales',
+  'Operations',
+  'Event Management',
+  'Education',
+  'Legal',
+  'Supply Chain',
+  'Customer Success',
 ];
 
 const COMPANY_SIZES = [
@@ -47,6 +60,16 @@ const ROLES = {
   'Customer Success': ['Customer Success Director', 'Escalations Lead', 'Client Solutions Architect'],
 };
 
+// Roles of the person being addressed in Workspace Scenario mode
+const PERSON_ROLES = [
+  { label: 'Direct Manager (Level 3 Authority)', value: 'Direct Manager', authority: 'Manager', tone: 'Values concise explanations, ownership, timelines, risks, and proposed solutions.' },
+  { label: 'CEO / Executive Leadership (Level 6 Authority)', value: 'CEO / Executive', authority: 'Executive', tone: 'Values high-level business impact, strategic clarity, risks, and decisive executive choices.' },
+  { label: 'Client / External Stakeholder (Level 5 Authority)', value: 'Client / Stakeholder', authority: 'External Client', tone: 'Values high empathy, transparency, clear commitments, reassurance, and calm accountability.' },
+  { label: 'Team Leader / Senior Colleague (Level 2 Authority)', value: 'Team Leader', authority: 'Lead / Senior', tone: 'Values accountability, collaborative communication, proactive problem-solving, and clear next steps.' },
+  { label: 'Coworker / Teammate (Level 1 Authority)', value: 'Coworker / Teammate', authority: 'Peer', tone: 'Values directness, mutual collaboration, respect, and shared problem ownership.' },
+  { label: 'Department Head / Director (Level 4 Authority)', value: 'Department Head', authority: 'Director', tone: 'Values cross-functional coordination, resource optimization, risk mitigation, and escalations.' },
+];
+
 const CRISIS_SCENARIOS = {
   'Software Engineering': 'Critical Cloud Database Outage during peak traffic — data corruption suspected.',
   'Event Management': 'Main venue power failure 45 minutes before international summit keynote.',
@@ -54,13 +77,19 @@ const CRISIS_SCENARIOS = {
   'Finance': 'Automated high-frequency trading algorithm malfunction triggers flash liquidation.',
   'Healthcare': 'Hospital patient triage management network hit by ransomware threat.',
   'Operations': 'Global warehouse logistics automation freezes across 3 international hubs.',
+  'Human Resources': 'Sudden walkout threat by core department staff due to severe policy dispute.',
+  'Sales': 'Top enterprise account threatening immediate contract cancellation after SLA breach.',
+  'Education': 'Campus-wide examination platform failure during final certification week.',
+  'Legal': 'Urgent subpoena received regarding intellectual property infringement claim.',
+  'Supply Chain': 'Critical overseas component shipment impounded at customs indefinitely.',
+  'Customer Success': 'Major enterprise customer escalating severe downtime to C-suite.',
 };
 
 /**
- * SetupForm — Futuristic Fullscreen Responsive Configuration Cockpit
- * Adapts its entire layout, options, and aesthetic based on the selected mode:
+ * SetupForm — Configuration Cockpit
+ * Adapts its layout, options, and aesthetic based on the selected mode:
  * - 'interview': Virtual Interview Studio
- * - 'scenario': Mission Incident Command Center
+ * - 'scenario': ProdAI Theme Workspace Scenario (with ONLY Domain & Person Role dropdowns)
  */
 export default function SetupForm({ 
   onStart, 
@@ -68,18 +97,19 @@ export default function SetupForm({
   activeMode = 'interview', 
   onModeChange 
 }) {
-  const [candidateName, setCandidateName] = useState('');
+  const [candidateName, setCandidateName] = useState('Melinda G.');
   const [mode, setMode] = useState(activeMode);
   const [domain, setDomain] = useState('Software Engineering');
   const [company, setCompany] = useState('Large global enterprise');
   const [role, setRole] = useState('Full-Stack Developer');
+  const [targetPersonRole, setTargetPersonRole] = useState('Direct Manager');
   const [difficulty, setDifficulty] = useState('medium');
   const [numQuestions, setNumQuestions] = useState(3);
   const [durationMin, setDurationMin] = useState(15);
   const [strictMode, setStrictMode] = useState(true);
   const [pressureMode, setPressureMode] = useState(false);
 
-  // Resume Upload State
+  // Resume Upload State (for interview mode)
   const [resumeData, setResumeData] = useState(null);
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [resumeError, setResumeError] = useState(null);
@@ -99,13 +129,13 @@ export default function SetupForm({
     if (onModeChange) onModeChange(newMode);
   };
 
-  // Update role options when domain changes
+  // Update role options when domain changes (interview mode)
   useEffect(() => {
     const roles = ROLES[domain] || [];
     if (roles.length && !roles.includes(role)) {
       setRole(roles[0]);
     }
-  }, [domain]);
+  }, [domain, role]);
 
   const handleFileUpload = async (file) => {
     if (!file) return;
@@ -118,7 +148,7 @@ export default function SetupForm({
     try {
       const data = await uploadAndParseResume(file);
       setResumeData(data);
-      if (data.candidate_name && (!candidateName || candidateName === 'Candidate')) {
+      if (data.candidate_name && (!candidateName || candidateName === 'Candidate' || candidateName === 'Melinda G.')) {
         setCandidateName(data.candidate_name);
       }
       if (data.inferred_domain && DOMAINS.includes(data.inferred_domain)) {
@@ -164,43 +194,67 @@ Projects:
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onStart({
-      mode,
-      domain,
-      company,
-      role,
-      difficulty,
-      numQuestions: Number(numQuestions),
-      durationMin: Number(durationMin),
-      strictMode,
-      pressureMode,
-      candidate_name: candidateName.trim() || 'Candidate',
-      resume_text: resumeData?.resume_text || null,
-      resume_skills: resumeData?.key_skills || [],
-      resume_filename: resumeData?.filename || null,
-    });
+    if (mode === 'scenario') {
+      // Clean, focused workspace scenario configuration
+      onStart({
+        mode: 'scenario',
+        domain,
+        company: 'Enterprise Organization',
+        role: 'Operations Lead',
+        target_person_role: targetPersonRole,
+        difficulty: 'medium',
+        numQuestions: 3,
+        durationMin: 15,
+        strictMode: false,
+        pressureMode: false,
+        candidate_name: candidateName.trim() || 'Candidate',
+        resume_text: null,
+        resume_skills: [],
+        resume_filename: null,
+      });
+    } else {
+      // Interview mode configuration
+      onStart({
+        mode,
+        domain,
+        company,
+        role,
+        difficulty,
+        numQuestions: Number(numQuestions),
+        durationMin: Number(durationMin),
+        strictMode,
+        pressureMode,
+        candidate_name: candidateName.trim() || 'Candidate',
+        resume_text: resumeData?.resume_text || null,
+        resume_skills: resumeData?.key_skills || [],
+        resume_filename: resumeData?.filename || null,
+      });
+    }
   };
 
   const isInterview = mode === 'interview';
+  const selectedPersonMeta = PERSON_ROLES.find((p) => p.value === targetPersonRole) || PERSON_ROLES[0];
 
   return (
-    <div className="w-full min-h-screen py-8 px-4 sm:px-8 lg:px-12 flex flex-col justify-center max-w-7xl mx-auto select-none">
+    <div className={`w-full min-h-screen py-8 px-4 sm:px-8 lg:px-12 flex flex-col justify-center max-w-7xl mx-auto select-none ${
+      !isInterview ? 'font-sans' : ''
+    }`}>
       
-      {/* ── TOP CORPORATE HEADER & MODE INDICATOR ──────────────────────────── */}
+      {/* ── TOP HEADER / MODE SWITCHER ────────────────────────────────────────── */}
       <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-6">
         <div>
           <div className="flex flex-wrap items-center gap-2.5 mb-3">
-            <CorporateLogo size="sm" showText={true} subtitle="Workforce Intelligence Division" />
+            <CorporateLogo size="sm" showText={true} subtitle="Enterprise Simulation Engine" />
             <span className="hidden sm:inline-block text-slate-500">•</span>
             <span className={`text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
               isInterview 
                 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-400/30' 
-                : 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-400/30'
+                : 'bg-purple-500/20 text-purple-300 border-purple-400/30'
             }`}>
-              {isInterview ? 'Corporate Telepresence Suite' : 'Workspace Mode'}
+              {isInterview ? 'Corporate Telepresence Suite' : 'Workspace Scenario Dashboard'}
             </span>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              🛡️ Integrity Protocol Active
+              ⚡ System Ready
             </span>
           </div>
 
@@ -210,11 +264,11 @@ Projects:
           <p className="text-slate-400 text-sm sm:text-base mt-1.5 max-w-2xl leading-relaxed">
             {isInterview 
               ? 'Standardized enterprise interview protocol featuring generative AI telepresence, real-time voice analysis, and on-device integrity auditing.'
-              : 'Real-world workplace scenario challenges testing practical problem-solving, operational judgment, and situational decision-making.'}
+              : 'Interactive workplace challenge simulator tailored to your company domain and stakeholder relationship.'}
           </p>
         </div>
 
-        {/* Mode Switcher Pill on Top (also accessible via Left Rail) */}
+        {/* Mode Switcher Pill on Top */}
         <div className="ios-glass p-1.5 rounded-2xl flex items-center gap-1 shrink-0 self-start md:self-auto border-white/15">
           <button
             type="button"
@@ -234,7 +288,7 @@ Projects:
             onClick={() => handleModeSwitch('scenario')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               !isInterview
-                ? 'bg-fuchsia-500/25 border border-fuchsia-400/40 text-fuchsia-200 shadow-[0_0_15px_rgba(217,70,239,0.3)]'
+                ? 'bg-purple-600/30 border border-purple-400/50 text-purple-200 shadow-[0_0_20px_rgba(168,85,247,0.4)]'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -244,14 +298,241 @@ Projects:
         </div>
       </header>
 
-      {/* ── EXPANSIVE MULTI-COLUMN FORM (Wide screen: 2 columns; Phone: 1 column) ─ */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* ── LEFT PANEL (lg:col-span-6): DOSSIER / RESUME / SCENARIO PRESETS ── */}
-        <div className="lg:col-span-6 flex flex-col gap-6 w-full">
+      {/* ── CONDITIONAL SETUP VIEW ────────────────────────────────────────────── */}
+      {!isInterview ? (
+        /* ══════════════════════════════════════════════════════════════════════
+           WORKSPACE SCENARIO MODE: PRODAI DARK PURPLE DASHBOARD THEME
+           Featuring ONLY TWO DROPDOWNS:
+           1. Domain of Company
+           2. Role of the Person We Are Talking To
+           ══════════════════════════════════════════════════════════════════════ */
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6 max-w-5xl mx-auto">
           
-          {isInterview ? (
-            /* Interview Mode: Candidate Dossier & Resume Intelligence */
+          {/* Top Greeting Banner (matches ProdAI screenshot "Good evening, Melinda! Here is today's progress bar") */}
+          <div className="prodai-card p-6 sm:p-7 relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-[1.5px] shadow-[0_0_20px_rgba(139,92,246,0.35)]">
+                  <div className="w-full h-full rounded-[14px] bg-[#161726] flex items-center justify-center text-purple-300 font-bold text-sm">
+                    MG
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                    Good evening, {candidateName}!
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configure your workplace crisis scenario below to begin the simulation.
+                  </p>
+                </div>
+              </div>
+
+              {/* Pill tabs matching the top-right of ProdAI screenshot */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#161726] border border-[#2b2d42] self-start sm:self-auto text-xs">
+                <span className="prodai-pill-active px-3 py-1 rounded-lg text-xs">
+                  Scenario
+                </span>
+                <span className="prodai-pill-inactive px-3 py-1 rounded-lg text-xs">
+                  Active
+                </span>
+              </div>
+            </div>
+
+            {/* Slim neon purple progress bar matching screenshot */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                <span>Simulation Readiness</span>
+                <span className="text-purple-300 font-bold">100% Prepared</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-[#161726] overflow-hidden border border-[#2b2d42]">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-400 rounded-full shadow-[0_0_12px_#8b5cf6]"
+                  style={{ width: '100%' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Main 2-Column Dashboard Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* LEFT CARD (lg:col-span-7): ONLY THE TWO REQUESTED DROPDOWNS */}
+            <div className="lg:col-span-7 prodai-card p-6 sm:p-7 space-y-6">
+              <div className="flex items-center justify-between border-b border-[#2b2d42] pb-4">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-purple-400" />
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Workspace Scenario Setup
+                  </h3>
+                </div>
+                <span className="text-[10px] font-mono text-purple-300 bg-purple-500/15 border border-purple-400/25 px-2.5 py-0.5 rounded-full">
+                  2 Selections Required
+                </span>
+              </div>
+
+              {/* ── DROPDOWN 1: DOMAIN OF COMPANY ─────────────────────────── */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-purple-400" />
+                    <span>Domain of Company</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">Industry Context</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    className="w-full prodai-input rounded-xl p-3.5 text-sm font-semibold text-white cursor-pointer appearance-none"
+                  >
+                    {DOMAINS.map((d) => (
+                      <option key={d} value={d} className="bg-[#1c1d2c] text-white py-2">
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-purple-400 font-bold text-xs">
+                    ▼
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Defines the operational context, industry challenges, and real-world stakes for the scenario.
+                </p>
+              </div>
+
+              {/* ── DROPDOWN 2: ROLE OF THE PERSON WE ARE TALKING TO ───────── */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-indigo-400" />
+                    <span>Role of the Person We Are Talking To</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">
+                    {selectedPersonMeta.authority}
+                  </span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={targetPersonRole}
+                    onChange={(e) => setTargetPersonRole(e.target.value)}
+                    className="w-full prodai-input rounded-xl p-3.5 text-sm font-semibold text-white cursor-pointer appearance-none"
+                  >
+                    {PERSON_ROLES.map((p) => (
+                      <option key={p.value} value={p.value} className="bg-[#1c1d2c] text-white py-2">
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-indigo-400 font-bold text-xs">
+                    ▼
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Tailors the AI stakeholder's communication style, expectations, and authority response dynamics.
+                </p>
+              </div>
+
+              {/* Primary Submit Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-4 rounded-xl text-sm font-bold text-white prodai-btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none shadow-xl"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Synthesizing Scenario for {targetPersonRole}…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Enter Workspace Scenario</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT CARDS (lg:col-span-5): STAKEHOLDER & SCENARIO PREVIEW */}
+            <div className="lg:col-span-5 flex flex-col gap-6">
+              
+              {/* Stakeholder Persona Insight Card (styled like "AI Chat & Recommendations" in screenshot) */}
+              <div className="prodai-card p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#2b2d42] pb-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-purple-400" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-white">
+                      Target Stakeholder Brief
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-purple-300">
+                    Live Role
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[#161726] border border-[#2b2d42] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">
+                      {selectedPersonMeta.value}
+                    </span>
+                    <span className="text-[10px] font-mono text-purple-300">
+                      Authority Level
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    "{selectedPersonMeta.tone}"
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Key Evaluation Focus:
+                  </span>
+                  <div className="flex items-center gap-2 text-slate-300 text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Role-appropriate tone & communication</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-300 text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Clear accountability & realistic mitigation</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-300 text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>Decision quality under operational constraints</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Simulated Emergency Context Card */}
+              <div className="prodai-card p-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-rose-300 flex items-center gap-2">
+                    <Flame className="w-3.5 h-3.5 text-rose-400" />
+                    Crisis Domain Preview
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30">
+                    {domain}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed p-3 rounded-xl bg-[#161726] border border-[#2b2d42]">
+                  "{CRISIS_SCENARIOS[domain] || 'High-stakes workplace emergency requiring urgent cross-functional mitigation.'}"
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+        </form>
+      ) : (
+        /* ══════════════════════════════════════════════════════════════════════
+           INTERVIEW MODE: FULL TELEPRESENCE STUDIO SETUP
+           ══════════════════════════════════════════════════════════════════════ */
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* ── LEFT PANEL (lg:col-span-6): DOSSIER / RESUME ─────────────────── */}
+          <div className="lg:col-span-6 flex flex-col gap-6 w-full">
             <div className="ios-glass-card rounded-3xl p-6 sm:p-7 border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.06)] space-y-5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
@@ -284,7 +565,7 @@ Projects:
               {/* Resume PDF Drop Zone */}
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                  Resume (PDF) for Custom Tailored Questions
+                  Resume (PDF) for Tailored Questions
                 </label>
 
                 {resumeData ? (
@@ -363,27 +644,50 @@ Projects:
                 </div>
               )}
             </div>
-          ) : (
-            /* Workspace Mode: Crisis Scenario Dossier */
-            <div className="ios-glass-card rounded-3xl p-6 sm:p-7 border-fuchsia-500/20 shadow-[0_0_30px_rgba(217,70,239,0.06)] space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300 flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-fuchsia-400" />
-                  Workplace Crisis Scenario Dossier
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30">
-                  Live Incident
-                </span>
+          </div>
+
+          {/* ── RIGHT PANEL (lg:col-span-6): INTERVIEW PARAMETERS ────────────── */}
+          <div className="lg:col-span-6 flex flex-col gap-6 w-full">
+            <div className="ios-glass-card rounded-3xl p-6 sm:p-7 border-white/15 space-y-5">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-indigo-400" />
+                Interview Simulation Settings
+              </span>
+
+              {/* Domain Selector */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Industry Domain
+                </label>
+                <select
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  className="w-full ios-glass-input rounded-2xl p-3 text-sm"
+                >
+                  {DOMAINS.map((d) => (
+                    <option key={d} value={d} className="bg-slate-900 text-white">
+                      {d}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Scenario Context Card */}
-              <div className="p-4 rounded-2xl bg-fuchsia-950/20 border border-fuchsia-500/30 space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-300">
-                  Simulated Emergency:
-                </span>
-                <p className="text-sm font-semibold text-slate-100 leading-relaxed">
-                  "{CRISIS_SCENARIOS[domain] || 'High-stakes workplace emergency requiring urgent cross-functional mitigation.'}"
-                </p>
+              {/* Target Candidate Role */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Target Role
+                </label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full ios-glass-input rounded-2xl p-3 text-sm"
+                >
+                  {(ROLES[domain] || []).map((r) => (
+                    <option key={r} value={r} className="bg-slate-900 text-white">
+                      {r}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Company Environment */}
@@ -404,209 +708,79 @@ Projects:
                 </select>
               </div>
 
-              {/* Live Tools Included */}
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2 text-xs">
-                <span className="font-bold text-slate-300 block">Workspace Capabilities:</span>
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-fuchsia-400" />
-                    <span>Stakeholder Comms</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-fuchsia-400" />
-                    <span>Action Plan Editor</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-fuchsia-400" />
-                    <span>Voice Command Input</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-fuchsia-400" />
-                    <span>SLA Risk Countdown</span>
-                  </div>
+              {/* Experience / Difficulty Tier */}
+              <div>
+                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                  Challenge Tier
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['easy', 'medium', 'hard'].map((lvl) => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => setDifficulty(lvl)}
+                      className={`py-2 rounded-xl text-xs font-bold capitalize transition-all ${
+                        difficulty === lvl
+                          ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 border border-white/30 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+                          : 'ios-glass-btn text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {lvl}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* ── RIGHT PANEL (lg:col-span-6): ROLE & SIMULATION PARAMETERS ─────── */}
-        <div className="lg:col-span-6 flex flex-col gap-6 w-full">
-          <div className="ios-glass-card rounded-3xl p-6 sm:p-7 border-white/15 space-y-5">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-indigo-400" />
-              Simulation Settings
-            </span>
-
-            {/* Domain Selector */}
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Industry Domain
-              </label>
-              <select
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
-                className="w-full ios-glass-input rounded-2xl p-3 text-sm"
-              >
-                {DOMAINS.map((d) => (
-                  <option key={d} value={d} className="bg-slate-900 text-white">
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Role Selector */}
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Target Role
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full ios-glass-input rounded-2xl p-3 text-sm"
-              >
-                {(ROLES[domain] || []).map((r) => (
-                  <option key={r} value={r} className="bg-slate-900 text-white">
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Experience / Difficulty Tier */}
-            <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                Challenge Tier
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {['easy', 'medium', 'hard'].map((lvl) => (
-                  <button
-                    key={lvl}
-                    type="button"
-                    onClick={() => setDifficulty(lvl)}
-                    className={`py-2 rounded-xl text-xs font-bold capitalize transition-all ${
-                      difficulty === lvl
-                        ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 border border-white/30 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]'
-                        : 'ios-glass-btn text-slate-400 hover:text-white'
+              {/* Strict Anti-Cheat Proctor Toggle */}
+              <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    On-Device Strict Proctor
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Detects mobile phones, disables copy-paste, and checks camera presence.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStrictMode(!strictMode)}
+                  className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
+                    strictMode ? 'bg-emerald-500' : 'bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`block w-5 h-5 rounded-full bg-white transition-transform ${
+                      strictMode ? 'translate-x-6' : 'translate-x-1'
                     }`}
-                  >
-                    {lvl}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Rounds & Duration */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                  Questions / Scenarios
-                </label>
-                <select
-                  value={numQuestions}
-                  onChange={(e) => setNumQuestions(Number(e.target.value))}
-                  className="w-full ios-glass-input rounded-2xl p-2.5 text-sm"
-                >
-                  <option value={2} className="bg-slate-900">2 Rounds (Quick)</option>
-                  <option value={3} className="bg-slate-900">3 Rounds (Standard)</option>
-                  <option value={5} className="bg-slate-900">5 Rounds (Comprehensive)</option>
-                </select>
+                  />
+                </button>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                  Time Cap
-                </label>
-                <select
-                  value={durationMin}
-                  onChange={(e) => setDurationMin(Number(e.target.value))}
-                  className="w-full ios-glass-input rounded-2xl p-2.5 text-sm"
-                >
-                  <option value={10} className="bg-slate-900">10 Minutes</option>
-                  <option value={15} className="bg-slate-900">15 Minutes</option>
-                  <option value={25} className="bg-slate-900">25 Minutes</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Strict Anti-Cheat Proctor Toggle */}
-            <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  On-Device Strict Proctor
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Detects mobile phones, disables copy-paste, and checks camera presence without cloud video recording.
-                </p>
-              </div>
+              {/* Launch Primary Button */}
               <button
-                type="button"
-                onClick={() => setStrictMode(!strictMode)}
-                className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
-                  strictMode ? 'bg-emerald-500' : 'bg-slate-700'
-                }`}
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2 shadow-2xl transition-all ios-glass-btn-primary disabled:opacity-40 disabled:pointer-events-none"
               >
-                <span
-                  className={`block w-5 h-5 rounded-full bg-white transition-transform ${
-                    strictMode ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Synthesizing Interview Protocol…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Enter Virtual Interview Studio</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </button>
             </div>
-
-            {/* Pressure Mode Toggle */}
-            <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Zap className="w-4 h-4 text-amber-400" />
-                  Pressure Mode (60s Timer)
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Each question has a strict 60-second response deadline. Tests decision quality under time pressure.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPressureMode(!pressureMode)}
-                className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
-                  pressureMode ? 'bg-amber-500' : 'bg-slate-700'
-                }`}
-              >
-                <span
-                  className={`block w-5 h-5 rounded-full bg-white transition-transform ${
-                    pressureMode ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Launch Primary Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-4 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2 shadow-2xl transition-all ${
-                isInterview ? 'ios-glass-btn-primary' : 'bg-gradient-to-r from-fuchsia-600/70 via-purple-600/70 to-indigo-600/70 border border-fuchsia-400/50 hover:brightness-110'
-              } disabled:opacity-40 disabled:pointer-events-none`}
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Synthesizing Role Challenges…</span>
-                </>
-              ) : (
-                <>
-                  <span>
-                    {isInterview ? 'Enter Virtual Interview Studio' : 'Enter Workspace Scenario'}
-                  </span>
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
           </div>
-        </div>
-      </form>
+
+        </form>
+      )}
+
     </div>
   );
 }

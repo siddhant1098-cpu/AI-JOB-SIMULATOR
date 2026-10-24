@@ -110,8 +110,9 @@ def chat(system: str, user: str, temperature: float = 0.7) -> str:
 class Config(BaseModel):
     mode: str = Field(..., description="'interview' or 'scenario'")
     domain: str
-    company: str
-    role: str
+    company: str = "Enterprise Organization"
+    role: str = "Candidate"
+    target_person_role: Optional[str] = "Manager"
     difficulty: str = "medium"
     numQuestions: int = 5
     durationMin: int = 20
@@ -207,21 +208,22 @@ Do not use double quotes inside question text; use single quotes.
 
 Return JSON: {{"items":[{{"id":1,"type":"...","text":"...","character":"...","character_authority_level":...,"priority":"...","scenario_context":"...","objective":"...","constraints":[],"evaluation_criteria":[]}}]}}"""
 
-QUESTIONS_USER_SCENARIO = """You are generating realistic workplace scenario challenges at {company} for a {role} in {domain}.
+QUESTIONS_USER_SCENARIO = """You are generating realistic workplace scenario challenges in the domain of {domain}.
+The candidate is directly addressing and interacting with: {target_person_role}.
 Difficulty: {difficulty}. Pressure Mode: {pressure_mode}.
-Generate {n} realistic workplace crisis/challenge scenarios.
+Generate {n} realistic workplace scenario challenges where the candidate must formulate an action plan and respond to this person ({target_person_role}).
 
 For each scenario:
-- Create a realistic character the candidate must interact with (vary authority levels 1-6)
+- The character must be: {target_person_role}
 - Assign an appropriate priority level (P1-P4)
-- Include clear context, constraints, and objectives
-- Make the candidate feel like they are IN the situation, not answering an exam
+- Include clear context, constraints, and objective
+- Ensure the interaction reflects the exact authority level and expectations of a {target_person_role}
 
 Keep each under 50 words so it sounds natural when spoken aloud.
 Do not use double quotes inside scenario text; use single quotes.
 {pressure_note}
 
-Return JSON: {{"items":[{{"id":1,"type":"scenario","text":"...","character":"...","character_authority_level":...,"priority":"...","scenario_context":"...","objective":"...","constraints":[],"evaluation_criteria":[]}}]}}"""
+Return JSON: {{"items":[{{"id":1,"type":"scenario","text":"...","character":"{target_person_role}","character_authority_level":3,"priority":"P3","scenario_context":"...","objective":"...","constraints":[],"evaluation_criteria":[]}}]}}"""
 
 QUESTIONS_USER_RESUME = """You are conducting a personalized interview at {company} for a {role} in {domain}.
 Difficulty: {difficulty}. Pressure Mode: {pressure_mode}.
@@ -258,8 +260,12 @@ async def generate_questions(req: QuestionsRequest):
             pressure_mode=pressure_mode, pressure_note=pressure_note
         )
     elif c.mode == "scenario":
+        target_person = c.target_person_role or c.role or "Direct Manager"
         user_msg = QUESTIONS_USER_SCENARIO.format(
-            company=c.company, role=c.role, domain=c.domain,
+            company=c.company or "Enterprise Organization",
+            role=c.role or "Lead Operator",
+            target_person_role=target_person,
+            domain=c.domain,
             difficulty=c.difficulty, n=c.numQuestions,
             pressure_mode=pressure_mode, pressure_note=pressure_note
         )

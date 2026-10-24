@@ -88,18 +88,18 @@ export default function NavigationRail({
           {/* Mode 2: Workspace Mode Symbol */}
           <button
             onClick={() => onSelectMode('scenario')}
-            title="Workplace Crisis Simulator (Incident Command Center)"
+            title="Workplace Scenario Mode"
             className={`group relative w-14 h-14 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 ${
               isWorkspace
-                ? 'ios-glass-panel-active bg-gradient-to-br from-purple-500/25 to-pink-500/20 text-fuchsia-300 border-fuchsia-400/40 shadow-[0_0_25px_rgba(217,70,239,0.35)] scale-105'
+                ? 'bg-purple-600/30 text-purple-200 border border-purple-400/50 shadow-[0_0_20px_rgba(139,92,246,0.35)] scale-105'
                 : 'ios-glass-btn text-slate-400 hover:text-white hover:border-white/30'
             }`}
           >
             {isWorkspace && (
-              <span className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-1.5 h-7 bg-fuchsia-400 rounded-r-full shadow-[0_0_12px_#e879f9]" />
+              <span className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-1.5 h-7 bg-purple-500 rounded-r-full shadow-[0_0_12px_#8b5cf6]" />
             )}
 
-            <Terminal className={`w-5 h-5 transition-transform duration-300 ${isWorkspace ? 'scale-110 text-fuchsia-300' : 'group-hover:scale-110'}`} />
+            <Terminal className={`w-5 h-5 transition-transform duration-300 ${isWorkspace ? 'scale-110 text-purple-300' : 'group-hover:scale-110'}`} />
             <span className="text-[9px] font-bold tracking-tight mt-1 opacity-90">
               Workspace
             </span>
