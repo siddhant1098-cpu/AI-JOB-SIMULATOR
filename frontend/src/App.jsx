@@ -116,7 +116,7 @@ export default function App() {
 
   return (
     <ErrorBoundary onReset={handleNewSession}>
-      <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-futuristic-mesh select-none font-sans text-slate-100">
+      <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden dash-bg select-none font-sans text-slate-100">
         
         {/* ── LEFT COLUMN NAVIGATION RAIL ───────────────────────────────────────── */}
         <NavigationRail

@@ -22,7 +22,8 @@ import {
   User,
   MessageSquare,
   Shield,
-  ChevronRight
+  ChevronRight,
+  Timer
 } from 'lucide-react';
 
 const DOMAINS = [
@@ -38,11 +39,6 @@ const DOMAINS = [
   'Legal',
   'Supply Chain',
   'Customer Success',
-];
-
-const COMPANY_SIZES = [
-  'Small high-growth startup', 'Mid-size company', 'Large global enterprise', 'Public sector / Gov',
-  'Consulting firm',
 ];
 
 const ROLES = {
@@ -86,10 +82,10 @@ const CRISIS_SCENARIOS = {
 };
 
 /**
- * SetupForm — Configuration Cockpit
- * Adapts its layout, options, and aesthetic based on the selected mode:
+ * SetupForm — Spacious Configuration Cockpit
+ * Unified modern dark dashboard theme across both modes:
+ * - 'scenario': Workspace Scenario (Domain, Person Role, and Pressure Mode toggle)
  * - 'interview': Virtual Interview Studio
- * - 'scenario': ProdAI Theme Workspace Scenario (with ONLY Domain & Person Role dropdowns)
  */
 export default function SetupForm({ 
   onStart, 
@@ -97,10 +93,9 @@ export default function SetupForm({
   activeMode = 'interview', 
   onModeChange 
 }) {
-  const [candidateName, setCandidateName] = useState('Melinda G.');
+  const [candidateName, setCandidateName] = useState('');
   const [mode, setMode] = useState(activeMode);
   const [domain, setDomain] = useState('Software Engineering');
-  const [company, setCompany] = useState('Large global enterprise');
   const [role, setRole] = useState('Full-Stack Developer');
   const [targetPersonRole, setTargetPersonRole] = useState('Direct Manager');
   const [difficulty, setDifficulty] = useState('medium');
@@ -148,7 +143,7 @@ export default function SetupForm({
     try {
       const data = await uploadAndParseResume(file);
       setResumeData(data);
-      if (data.candidate_name && (!candidateName || candidateName === 'Candidate' || candidateName === 'Melinda G.')) {
+      if (data.candidate_name && (!candidateName || candidateName === 'Candidate')) {
         setCandidateName(data.candidate_name);
       }
       if (data.inferred_domain && DOMAINS.includes(data.inferred_domain)) {
@@ -195,7 +190,6 @@ Projects:
   const handleSubmit = (e) => {
     e.preventDefault();
     if (mode === 'scenario') {
-      // Clean, focused workspace scenario configuration
       onStart({
         mode: 'scenario',
         domain,
@@ -206,18 +200,17 @@ Projects:
         numQuestions: 3,
         durationMin: 15,
         strictMode: false,
-        pressureMode: false,
+        pressureMode,
         candidate_name: candidateName.trim() || 'Candidate',
         resume_text: null,
         resume_skills: [],
         resume_filename: null,
       });
     } else {
-      // Interview mode configuration
       onStart({
         mode,
         domain,
-        company,
+        company: 'Enterprise Organization',
         role,
         difficulty,
         numQuestions: Number(numQuestions),
@@ -236,63 +229,64 @@ Projects:
   const selectedPersonMeta = PERSON_ROLES.find((p) => p.value === targetPersonRole) || PERSON_ROLES[0];
 
   return (
-    <div className={`w-full min-h-screen py-8 px-4 sm:px-8 lg:px-12 flex flex-col justify-center max-w-7xl mx-auto select-none ${
-      !isInterview ? 'font-sans' : ''
-    }`}>
+    <div className="w-full min-h-screen py-10 px-6 sm:px-10 lg:px-16 flex flex-col justify-center max-w-7xl mx-auto select-none font-sans text-slate-100">
       
-      {/* ── TOP HEADER / MODE SWITCHER ────────────────────────────────────────── */}
-      <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-6">
+      {/* ── TOP HEADER / MODE SWITCHER (SPACIOUS & UNCLUTTERED) ─────────────── */}
+      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-[#282a3e] pb-8">
         <div>
-          <div className="flex flex-wrap items-center gap-2.5 mb-3">
+          <div className="flex flex-wrap items-center gap-3 mb-3">
             <CorporateLogo size="sm" showText={true} subtitle="Enterprise Simulation Engine" />
-            <span className="hidden sm:inline-block text-slate-500">•</span>
-            <span className={`text-[10px] font-mono font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${
+            <span className="hidden sm:inline-block text-slate-600">•</span>
+            <span className={`text-xs font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
               isInterview 
                 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-400/30' 
                 : 'bg-purple-500/20 text-purple-300 border-purple-400/30'
             }`}>
-              {isInterview ? 'Corporate Telepresence Suite' : 'Workspace Scenario Dashboard'}
+              {isInterview ? 'Corporate Telepresence Suite' : 'Workspace Scenario Suite'}
             </span>
-            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              ⚡ System Ready
-            </span>
+            {pressureMode && (
+              <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-400/40 animate-pulse flex items-center gap-1.5">
+                <Timer className="w-3.5 h-3.5 text-amber-400" />
+                60s Pressure Room Active
+              </span>
+            )}
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-            {isInterview ? 'Interview Question and Answer' : 'Workspace Scenario'}
+            {isInterview ? 'Interview Question and Answer' : 'Workspace Scenario Simulation'}
           </h1>
-          <p className="text-slate-400 text-sm sm:text-base mt-1.5 max-w-2xl leading-relaxed">
+          <p className="text-slate-400 text-base sm:text-lg mt-2 max-w-3xl leading-relaxed">
             {isInterview 
-              ? 'Standardized enterprise interview protocol featuring generative AI telepresence, real-time voice analysis, and on-device integrity auditing.'
-              : 'Interactive workplace challenge simulator tailored to your company domain and stakeholder relationship.'}
+              ? 'Comprehensive role-based interview simulation featuring conversational voice analysis, technical deep-dives, and real-time evaluation.'
+              : 'Real-world workplace challenge simulation testing leadership instincts, problem-solving, and role-appropriate communication.'}
           </p>
         </div>
 
-        {/* Mode Switcher Pill on Top */}
-        <div className="ios-glass p-1.5 rounded-2xl flex items-center gap-1 shrink-0 self-start md:self-auto border-white/15">
+        {/* Mode Switcher Pill */}
+        <div className="p-1.5 rounded-2xl bg-[#181928] border border-[#282a3e] flex items-center gap-1.5 shrink-0 self-start md:self-auto shadow-xl">
           <button
             type="button"
             onClick={() => handleModeSwitch('interview')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               isInterview
-                ? 'bg-cyan-500/25 border border-cyan-400/40 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(6,182,212,0.35)]'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Video className="w-3.5 h-3.5" />
+            <Video className="w-4 h-4" />
             <span>Interview Mode</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleModeSwitch('scenario')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               !isInterview
-                ? 'bg-purple-600/30 border border-purple-400/50 text-purple-200 shadow-[0_0_20px_rgba(168,85,247,0.4)]'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.35)]'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Terminal className="w-3.5 h-3.5" />
+            <Terminal className="w-4 h-4" />
             <span>Workspace Mode</span>
           </button>
         </div>
@@ -301,92 +295,50 @@ Projects:
       {/* ── CONDITIONAL SETUP VIEW ────────────────────────────────────────────── */}
       {!isInterview ? (
         /* ══════════════════════════════════════════════════════════════════════
-           WORKSPACE SCENARIO MODE: PRODAI DARK PURPLE DASHBOARD THEME
-           Featuring ONLY TWO DROPDOWNS:
-           1. Domain of Company
-           2. Role of the Person We Are Talking To
+           WORKSPACE SCENARIO MODE: SPACIOUS & FOCUSED
+           Featuring ONLY:
+           1. Domain of Company (Dropdown)
+           2. Role of the Person We Are Talking To (Dropdown)
+           3. Pressure Mode Toggle (60s timer)
            ══════════════════════════════════════════════════════════════════════ */
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6 max-w-5xl mx-auto">
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8 max-w-5xl mx-auto">
           
-          {/* Top Greeting Banner (matches ProdAI screenshot "Good evening, Melinda! Here is today's progress bar") */}
-          <div className="prodai-card p-6 sm:p-7 relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-[1.5px] shadow-[0_0_20px_rgba(139,92,246,0.35)]">
-                  <div className="w-full h-full rounded-[14px] bg-[#161726] flex items-center justify-center text-purple-300 font-bold text-sm">
-                    MG
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* LEFT / MAIN CARD (lg:col-span-7): THE CONFIGURATION COCKPIT */}
+            <div className="lg:col-span-7 dash-card p-8 sm:p-10 space-y-7">
+              <div className="flex items-center justify-between border-b border-[#282a3e] pb-5">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    Good evening, {candidateName}!
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Configure your workplace crisis scenario below to begin the simulation.
+                  <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2.5">
+                    <Sliders className="w-5 h-5 text-purple-400" />
+                    <span>Scenario Configuration</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Select your operational context and target stakeholder.
                   </p>
                 </div>
-              </div>
-
-              {/* Pill tabs matching the top-right of ProdAI screenshot */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#161726] border border-[#2b2d42] self-start sm:self-auto text-xs">
-                <span className="prodai-pill-active px-3 py-1 rounded-lg text-xs">
-                  Scenario
-                </span>
-                <span className="prodai-pill-inactive px-3 py-1 rounded-lg text-xs">
-                  Active
-                </span>
-              </div>
-            </div>
-
-            {/* Slim neon purple progress bar matching screenshot */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                <span>Simulation Readiness</span>
-                <span className="text-purple-300 font-bold">100% Prepared</span>
-              </div>
-              <div className="w-full h-1.5 rounded-full bg-[#161726] overflow-hidden border border-[#2b2d42]">
-                <div 
-                  className="h-full bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-400 rounded-full shadow-[0_0_12px_#8b5cf6]"
-                  style={{ width: '100%' }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Main 2-Column Dashboard Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* LEFT CARD (lg:col-span-7): ONLY THE TWO REQUESTED DROPDOWNS */}
-            <div className="lg:col-span-7 prodai-card p-6 sm:p-7 space-y-6">
-              <div className="flex items-center justify-between border-b border-[#2b2d42] pb-4">
-                <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-purple-400" />
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                    Workspace Scenario Setup
-                  </h3>
-                </div>
-                <span className="text-[10px] font-mono text-purple-300 bg-purple-500/15 border border-purple-400/25 px-2.5 py-0.5 rounded-full">
-                  2 Selections Required
+                <span className="text-xs font-mono text-purple-300 bg-purple-500/15 border border-purple-400/25 px-3 py-1 rounded-full">
+                  Step 1 of 1
                 </span>
               </div>
 
               {/* ── DROPDOWN 1: DOMAIN OF COMPANY ─────────────────────────── */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+              <div className="space-y-2.5">
+                <label className="text-sm font-bold text-slate-200 flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-purple-400" />
                     <span>Domain of Company</span>
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">Industry Context</span>
+                  <span className="text-xs font-mono text-slate-400">Industry Sector</span>
                 </label>
                 <div className="relative">
                   <select
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
-                    className="w-full prodai-input rounded-xl p-3.5 text-sm font-semibold text-white cursor-pointer appearance-none"
+                    className="w-full dash-input rounded-2xl p-4 text-base font-semibold text-white cursor-pointer appearance-none shadow-sm"
                   >
                     {DOMAINS.map((d) => (
-                      <option key={d} value={d} className="bg-[#1c1d2c] text-white py-2">
+                      <option key={d} value={d} className="bg-[#181928] text-white py-2">
                         {d}
                       </option>
                     ))}
@@ -395,19 +347,19 @@ Projects:
                     ▼
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Defines the operational context, industry challenges, and real-world stakes for the scenario.
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Defines the operational context, industry challenges, and real-world stakes.
                 </p>
               </div>
 
               {/* ── DROPDOWN 2: ROLE OF THE PERSON WE ARE TALKING TO ───────── */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+              <div className="space-y-2.5">
+                <label className="text-sm font-bold text-slate-200 flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <User className="w-4 h-4 text-indigo-400" />
                     <span>Role of the Person We Are Talking To</span>
                   </span>
-                  <span className="text-[10px] font-mono text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-mono text-purple-300 bg-purple-500/15 px-2.5 py-0.5 rounded-full border border-purple-400/30">
                     {selectedPersonMeta.authority}
                   </span>
                 </label>
@@ -415,10 +367,10 @@ Projects:
                   <select
                     value={targetPersonRole}
                     onChange={(e) => setTargetPersonRole(e.target.value)}
-                    className="w-full prodai-input rounded-xl p-3.5 text-sm font-semibold text-white cursor-pointer appearance-none"
+                    className="w-full dash-input rounded-2xl p-4 text-base font-semibold text-white cursor-pointer appearance-none shadow-sm"
                   >
                     {PERSON_ROLES.map((p) => (
-                      <option key={p.value} value={p.value} className="bg-[#1c1d2c] text-white py-2">
+                      <option key={p.value} value={p.value} className="bg-[#181928] text-white py-2">
                         {p.label}
                       </option>
                     ))}
@@ -427,96 +379,121 @@ Projects:
                     ▼
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Tailors the AI stakeholder's communication style, expectations, and authority response dynamics.
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Calibrates the AI character's expectations, authority dynamics, and conversational pushback.
                 </p>
               </div>
 
+              {/* ── PRESSURE MODE TOGGLE ────────────────────────────────────── */}
+              <div className={`p-5 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                pressureMode 
+                  ? 'bg-amber-950/20 border-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.15)]' 
+                  : 'bg-[#121320] border-[#282a3e]'
+              }`}>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-white flex items-center gap-2">
+                    <Zap className={`w-4 h-4 ${pressureMode ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <span>Pressure Mode (60s Timer)</span>
+                  </p>
+                  <p className="text-xs text-slate-400 leading-relaxed max-w-md">
+                    Enforces an exact 60-second response deadline per round to evaluate decision quality under time pressure.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPressureMode(!pressureMode)}
+                  className={`w-14 h-7 rounded-full transition-colors relative shrink-0 p-1 ${
+                    pressureMode ? 'bg-amber-500 shadow-[0_0_15px_#f59e0b]' : 'bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`block w-5 h-5 rounded-full bg-white transition-transform ${
+                      pressureMode ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
               {/* Primary Submit Button */}
-              <div className="pt-2">
+              <div className="pt-3">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-4 rounded-xl text-sm font-bold text-white prodai-btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none shadow-xl"
+                  className="w-full py-4.5 rounded-2xl text-base font-extrabold text-white dash-btn-primary flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:pointer-events-none shadow-2xl"
                 >
                   {isLoading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>Synthesizing Scenario for {targetPersonRole}…</span>
                     </>
                   ) : (
                     <>
-                      <span>Enter Workspace Scenario</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <span>Launch Workspace Scenario</span>
+                      <ArrowRight className="w-5 h-5" />
                     </>
                   )}
                 </button>
               </div>
             </div>
 
-            {/* RIGHT CARDS (lg:col-span-5): STAKEHOLDER & SCENARIO PREVIEW */}
+            {/* RIGHT COLUMN (lg:col-span-5): STAKEHOLDER DOSSIER PREVIEW */}
             <div className="lg:col-span-5 flex flex-col gap-6">
               
-              {/* Stakeholder Persona Insight Card (styled like "AI Chat & Recommendations" in screenshot) */}
-              <div className="prodai-card p-6 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#2b2d42] pb-3">
-                  <div className="flex items-center gap-2">
+              {/* Stakeholder Persona Insight Card */}
+              <div className="dash-card p-7 space-y-5">
+                <div className="flex items-center justify-between border-b border-[#282a3e] pb-3.5">
+                  <div className="flex items-center gap-2.5">
                     <MessageSquare className="w-4 h-4 text-purple-400" />
                     <span className="text-xs font-bold uppercase tracking-wider text-white">
-                      Target Stakeholder Brief
+                      Target Stakeholder Profile
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-purple-300">
-                    Live Role
+                  <span className="text-xs font-mono text-purple-300">
+                    Authority {selectedPersonMeta.authority}
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[#161726] border border-[#2b2d42] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white">
-                      {selectedPersonMeta.value}
-                    </span>
-                    <span className="text-[10px] font-mono text-purple-300">
-                      Authority Level
-                    </span>
-                  </div>
+                <div className="p-4 rounded-xl bg-[#121320] border border-[#282a3e] space-y-2">
+                  <span className="text-sm font-bold text-white block">
+                    {selectedPersonMeta.value}
+                  </span>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     "{selectedPersonMeta.tone}"
                   </p>
                 </div>
 
-                <div className="space-y-1.5 text-xs text-slate-400">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    Key Evaluation Focus:
+                <div className="space-y-2 text-xs text-slate-400">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                    Evaluation Priorities:
                   </span>
-                  <div className="flex items-center gap-2 text-slate-300 text-[11px]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Role-appropriate tone & communication</span>
+                  <div className="flex items-start gap-2.5 text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>Role-appropriate tone & clear communication</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-300 text-[11px]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Clear accountability & realistic mitigation</span>
+                  <div className="flex items-start gap-2.5 text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>Ownership, mitigation steps & realistic timelines</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-300 text-[11px]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>Decision quality under operational constraints</span>
+                  <div className="flex items-start gap-2.5 text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span>Calm decision-making under operational constraints</span>
                   </div>
                 </div>
               </div>
 
-              {/* Simulated Emergency Context Card */}
-              <div className="prodai-card p-6 space-y-3">
+              {/* Simulated Domain Crisis Preview */}
+              <div className="dash-card p-7 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-rose-300 flex items-center gap-2">
-                    <Flame className="w-3.5 h-3.5 text-rose-400" />
-                    Crisis Domain Preview
+                    <Flame className="w-4 h-4 text-rose-400" />
+                    Simulated Operational Challenge
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30">
+                  <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30">
                     {domain}
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-300 leading-relaxed p-3 rounded-xl bg-[#161726] border border-[#2b2d42]">
+                <p className="text-xs text-slate-300 leading-relaxed p-4 rounded-xl bg-[#121320] border border-[#282a3e]">
                   "{CRISIS_SCENARIOS[domain] || 'High-stakes workplace emergency requiring urgent cross-functional mitigation.'}"
                 </p>
               </div>
@@ -527,45 +504,45 @@ Projects:
         </form>
       ) : (
         /* ══════════════════════════════════════════════════════════════════════
-           INTERVIEW MODE: FULL TELEPRESENCE STUDIO SETUP
+           INTERVIEW MODE: UNIFIED SPACIOUS MODERN DASHBOARD THEME
            ══════════════════════════════════════════════════════════════════════ */
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-6xl mx-auto w-full">
           
           {/* ── LEFT PANEL (lg:col-span-6): DOSSIER / RESUME ─────────────────── */}
           <div className="lg:col-span-6 flex flex-col gap-6 w-full">
-            <div className="ios-glass-card rounded-3xl p-6 sm:p-7 border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.06)] space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+            <div className="dash-card p-8 sm:p-10 space-y-6">
+              <div className="flex items-center justify-between border-b border-[#282a3e] pb-4">
+                <span className="text-sm font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
                   <UserCheck className="w-4 h-4 text-cyan-400" />
                   Candidate Profile & Resume
                 </span>
                 <button
                   type="button"
                   onClick={handleLoadDemoResume}
-                  className="ios-glass-btn px-2.5 py-1 rounded-xl text-[11px] text-cyan-300 hover:text-white font-semibold"
+                  className="dash-btn-secondary px-3 py-1.5 rounded-xl text-xs text-cyan-300 hover:text-white font-semibold"
                 >
-                  ⚡ Fill Demo Resume
+                  ⚡ Demo Resume
                 </button>
               </div>
 
               {/* Candidate Name Input */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                  Full Name
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-200 block">
+                  Candidate Name
                 </label>
                 <input
                   type="text"
                   value={candidateName}
                   onChange={(e) => setCandidateName(e.target.value)}
                   placeholder="e.g. Alex Vance"
-                  className="w-full ios-glass-input rounded-2xl p-3 text-sm placeholder-slate-500"
+                  className="w-full dash-input rounded-2xl p-4 text-base placeholder-slate-500"
                 />
               </div>
 
               {/* Resume PDF Drop Zone */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                  Resume (PDF) for Tailored Questions
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-200 block">
+                  Resume (PDF) for Custom Tailored Questions
                 </label>
 
                 {resumeData ? (
@@ -575,10 +552,10 @@ Projects:
                         <FileText className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-white leading-tight">
+                        <p className="text-sm font-bold text-white leading-tight">
                           {resumeData.filename || 'Uploaded Resume'}
                         </p>
-                        <p className="text-[11px] text-cyan-300 mt-0.5">
+                        <p className="text-xs text-cyan-300 mt-0.5">
                           {resumeData.key_skills?.length || 0} skills extracted
                         </p>
                       </div>
@@ -586,7 +563,7 @@ Projects:
                     <button
                       type="button"
                       onClick={() => setResumeData(null)}
-                      className="ios-glass-btn px-3 py-1 rounded-xl text-xs text-rose-300 hover:text-rose-100"
+                      className="px-3 py-1.5 rounded-xl text-xs text-rose-300 hover:text-rose-100 bg-rose-500/10 border border-rose-500/30"
                     >
                       Remove
                     </button>
@@ -597,10 +574,10 @@ Projects:
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                    className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
                       isDragging 
                         ? 'border-cyan-400 bg-cyan-500/10' 
-                        : 'border-white/15 hover:border-cyan-400/40 bg-white/[0.02]'
+                        : 'border-[#282a3e] hover:border-cyan-400/40 bg-[#121320]'
                     }`}
                   >
                     <input
@@ -610,33 +587,33 @@ Projects:
                       className="hidden"
                       onChange={(e) => handleFileUpload(e.target.files?.[0])}
                     />
-                    <Upload className="w-7 h-7 text-cyan-400 mx-auto mb-2" />
-                    <p className="text-xs font-bold text-slate-200">
-                      {isParsingResume ? 'Parsing Resume Intelligence...' : 'Drag & Drop your Resume PDF'}
+                    <Upload className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+                    <p className="text-sm font-bold text-slate-200">
+                      {isParsingResume ? 'Parsing Resume Intelligence...' : 'Upload Candidate Resume PDF'}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      or click to browse (.pdf format)
+                    <p className="text-xs text-slate-400 mt-1">
+                      Drag & drop or click to browse
                     </p>
                   </div>
                 )}
 
                 {resumeError && (
-                  <p className="text-xs text-rose-400 mt-1.5 flex items-center gap-1">
+                  <p className="text-xs text-rose-400 mt-1.5 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     {resumeError}
                   </p>
                 )}
               </div>
 
-              {/* Extracted Skills Pills */}
+              {/* Extracted Skills */}
               {resumeData?.key_skills && (
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
                     Extracted Candidate Strengths:
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-2">
                     {resumeData.key_skills.slice(0, 8).map((sk, idx) => (
-                      <span key={idx} className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-cyan-500/15 border border-cyan-400/25 text-cyan-200">
+                      <span key={idx} className="text-xs font-mono px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-400/25 text-cyan-200">
                         {sk}
                       </span>
                     ))}
@@ -648,24 +625,24 @@ Projects:
 
           {/* ── RIGHT PANEL (lg:col-span-6): INTERVIEW PARAMETERS ────────────── */}
           <div className="lg:col-span-6 flex flex-col gap-6 w-full">
-            <div className="ios-glass-card rounded-3xl p-6 sm:p-7 border-white/15 space-y-5">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <div className="dash-card p-8 sm:p-10 space-y-6">
+              <span className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 border-b border-[#282a3e] pb-4">
                 <Sliders className="w-4 h-4 text-indigo-400" />
                 Interview Simulation Settings
               </span>
 
               {/* Domain Selector */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-200 block">
                   Industry Domain
                 </label>
                 <select
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
-                  className="w-full ios-glass-input rounded-2xl p-3 text-sm"
+                  className="w-full dash-input rounded-2xl p-4 text-base"
                 >
                   {DOMAINS.map((d) => (
-                    <option key={d} value={d} className="bg-slate-900 text-white">
+                    <option key={d} value={d} className="bg-[#181928] text-white">
                       {d}
                     </option>
                   ))}
@@ -673,56 +650,38 @@ Projects:
               </div>
 
               {/* Target Candidate Role */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-200 block">
                   Target Role
                 </label>
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full ios-glass-input rounded-2xl p-3 text-sm"
+                  className="w-full dash-input rounded-2xl p-4 text-base"
                 >
                   {(ROLES[domain] || []).map((r) => (
-                    <option key={r} value={r} className="bg-slate-900 text-white">
+                    <option key={r} value={r} className="bg-[#181928] text-white">
                       {r}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Company Environment */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                  Target Company Scale & Environment
-                </label>
-                <select
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  className="w-full ios-glass-input rounded-2xl p-3 text-sm"
-                >
-                  {COMPANY_SIZES.map((cs) => (
-                    <option key={cs} value={cs} className="bg-slate-900 text-white">
-                      {cs}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {/* Experience / Difficulty Tier */}
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-200 block">
                   Challenge Tier
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   {['easy', 'medium', 'hard'].map((lvl) => (
                     <button
                       key={lvl}
                       type="button"
                       onClick={() => setDifficulty(lvl)}
-                      className={`py-2 rounded-xl text-xs font-bold capitalize transition-all ${
+                      className={`py-3 rounded-xl text-xs font-bold capitalize transition-all ${
                         difficulty === lvl
-                          ? 'bg-gradient-to-r from-indigo-500/40 to-purple-500/40 border border-white/30 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]'
-                          : 'ios-glass-btn text-slate-400 hover:text-white'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border border-white/30 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]'
+                          : 'dash-btn-secondary text-slate-400 hover:text-white'
                       }`}
                     >
                       {lvl}
@@ -731,15 +690,43 @@ Projects:
                 </div>
               </div>
 
-              {/* Strict Anti-Cheat Proctor Toggle */}
-              <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
+              {/* Pressure Mode Toggle */}
+              <div className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                pressureMode ? 'bg-amber-950/20 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)]' : 'bg-[#121320] border-[#282a3e]'
+              }`}>
                 <div>
-                  <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    On-Device Strict Proctor
+                  <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <Zap className={`w-4 h-4 ${pressureMode ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <span>Pressure Mode (60s Timer)</span>
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Detects mobile phones, disables copy-paste, and checks camera presence.
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Strict 60-second response countdown per challenge.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPressureMode(!pressureMode)}
+                  className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
+                    pressureMode ? 'bg-amber-500' : 'bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`block w-5 h-5 rounded-full bg-white transition-transform ${
+                      pressureMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Strict Anti-Cheat Proctor Toggle */}
+              <div className="p-4 rounded-2xl bg-[#121320] border border-[#282a3e] flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>On-Device Strict Proctor</span>
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Monitors camera integrity & phone presence with zero cloud recording.
                   </p>
                 </div>
                 <button
@@ -758,23 +745,25 @@ Projects:
               </div>
 
               {/* Launch Primary Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-4 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2 shadow-2xl transition-all ios-glass-btn-primary disabled:opacity-40 disabled:pointer-events-none"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Synthesizing Interview Protocol…</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Enter Virtual Interview Studio</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-4.5 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2.5 shadow-2xl transition-all dash-btn-primary disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Synthesizing Interview Protocol…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Launch Interview Studio</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 

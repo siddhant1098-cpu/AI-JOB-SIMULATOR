@@ -47,7 +47,7 @@ export default function NavigationRail({
   return (
     <>
       {/* ── DESKTOP LEFT COLUMN (Hidden on mobile, flex on md+) ──────────────── */}
-      <aside className="hidden md:flex flex-col items-center justify-between w-20 lg:w-22 h-screen py-6 px-3 ios-glass border-r border-white/10 z-50 shrink-0 select-none">
+      <aside className="hidden md:flex flex-col items-center justify-between w-20 lg:w-22 h-screen py-6 px-3 bg-[#121320] border-r border-[#282a3e] z-50 shrink-0 select-none">
         {/* Top: Corporate Brand Emblem */}
         <div className="flex flex-col items-center gap-1.5" title="NEXUS CORP • Enterprise Operations Suite">
           <CorporateLogo size="md" showText={false} />
@@ -148,7 +148,7 @@ export default function NavigationRail({
       </aside>
 
       {/* ── MOBILE RESPONSIVE BOTTOM GLASS DOCK (md:hidden) ────────────────── */}
-      <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 ios-glass rounded-3xl p-2 px-4 shadow-[0_10px_35px_rgba(0,0,0,0.6)] flex items-center justify-around border-white/20">
+      <nav className="md:hidden fixed bottom-3 left-3 right-3 z-50 bg-[#121320]/95 backdrop-blur-2xl rounded-3xl p-2 px-4 shadow-[0_10px_35px_rgba(0,0,0,0.6)] flex items-center justify-around border border-[#282a3e]">
         {/* Brand Mini */}
         <div className="flex items-center gap-2">
           <CorporateLogo size="sm" showText={false} />

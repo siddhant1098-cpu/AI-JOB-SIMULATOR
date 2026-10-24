@@ -25,6 +25,19 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   const [showVoicePanel, setShowVoicePanel] = useState(false);
   const [cameraFlags, setCameraFlags] = useState(sessionFlags || []);
   const [cheatWarning, setCheatWarning] = useState(null);
+  const [questionElapsedSec, setQuestionElapsedSec] = useState(0);
+
+  // Per-question timer for Pressure Mode (60s response deadline)
+  useEffect(() => {
+    setQuestionElapsedSec(0);
+    const qTimer = setInterval(() => {
+      setQuestionElapsedSec((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(qTimer);
+  }, [currentIndex, isFollowUp]);
+
+  const isPressureMode = !!config.pressureMode;
+  const pressureRemainingSec = isPressureMode ? Math.max(0, 60 - questionElapsedSec) : null;
 
   const warningTimerRef = useRef(null);
   const timerRef = useRef(null);
@@ -300,6 +313,8 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
     remainingSec,
     progress,
     elapsedSec,
+    isPressureMode,
+    pressureRemainingSec,
     onNextQuestion: handleNext,
     onSubmitAnswer: handleSubmitAnswer,
     onRedoAnswer: handleRedo,
@@ -313,7 +328,7 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col relative overflow-hidden bg-futuristic-mesh">
+    <div className="w-full h-full flex flex-col relative overflow-hidden dash-bg">
       {/* Voice Panel Dropdown (if toggled) */}
       {showVoicePanel && (
         <div className="fixed top-16 right-4 sm:right-8 z-50 max-w-sm w-full ios-glass-card rounded-2xl p-4 shadow-2xl">

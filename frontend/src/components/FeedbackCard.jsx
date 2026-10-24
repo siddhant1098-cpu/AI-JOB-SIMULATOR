@@ -82,12 +82,12 @@ export default function FeedbackCard({ feedback }) {
   };
 
   const MetricPill = ({ label, value, max = 100 }) => (
-    <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
+    <div className="p-3.5 rounded-2xl bg-[#121320] border border-[#282a3e] space-y-2">
       <div className="flex justify-between items-center text-xs">
-        <span className="text-slate-400 font-medium">{label}</span>
+        <span className="text-slate-300 font-medium">{label}</span>
         <span className="font-mono font-bold text-white">{Math.round(value)}<span className="text-slate-500">/{max}</span></span>
       </div>
-      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div className="h-2 bg-[#181928] rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full bg-gradient-to-r ${style.barColor} transition-all duration-500`}
           style={{ width: `${Math.min(100, Math.max(5, (value / max) * 100))}%` }}
@@ -97,7 +97,7 @@ export default function FeedbackCard({ feedback }) {
   );
 
   return (
-    <div className={`ios-glass-card rounded-3xl p-6 sm:p-7 border ${style.card} space-y-5 shadow-[0_0_35px_rgba(0,0,0,0.3)] transition-all`}>
+    <div className={`dash-card p-8 sm:p-10 border ${style.card} space-y-7 shadow-2xl transition-all`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

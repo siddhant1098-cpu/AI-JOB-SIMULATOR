@@ -123,7 +123,7 @@ export default function ReportPage({ session, onReset }) {
   }));
 
   return (
-    <div className="w-full min-h-screen p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto flex flex-col justify-start select-none font-sans bg-futuristic-mesh">
+    <div className="w-full min-h-screen p-6 sm:p-10 lg:p-14 max-w-7xl mx-auto flex flex-col justify-start select-none font-sans dash-bg">
       
       {/* ── TOP CORPORATE HEADER ───────────────────────────────────────────── */}
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-8">
