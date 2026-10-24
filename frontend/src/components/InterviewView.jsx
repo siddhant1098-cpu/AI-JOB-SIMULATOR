@@ -61,7 +61,7 @@ export default function InterviewView({
   handleContextMenu
 }) {
   const { config = {}, questions = [], currentIndex = 0 } = session || {};
-  const { videoRef, cameraReady, cameraError, faceCount = 1, phoneDetected = false, startCamera } = camera || {};
+  const { videoRef, cameraReady, cameraError, faceCount = 1, phoneDetected = false, startCamera, toggleFacingMode, currentFacingMode = 'user' } = camera || {};
 
   const mm = String(Math.floor(remainingSec / 60)).padStart(2, '0');
   const ss = String(remainingSec % 60).padStart(2, '0');
@@ -426,9 +426,22 @@ export default function InterviewView({
                   <span className={`w-2.5 h-2.5 rounded-full ${cameraReady ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                   <span className="text-xs font-bold text-white uppercase tracking-wider">Candidate Feed</span>
                 </div>
-                <span className="text-xs font-mono text-slate-400">
-                  {cameraReady ? '● 1080p Live' : 'Connecting...'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {cameraReady && (
+                    <button
+                      type="button"
+                      onClick={() => toggleFacingMode && toggleFacingMode()}
+                      className="px-2 py-1 rounded-lg bg-[#121320] hover:bg-[#1a1c2e] border border-[#282a3e] text-slate-300 hover:text-white transition-all text-[10px] font-mono flex items-center gap-1 shadow-sm"
+                      title="Switch between front and rear camera"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5 text-indigo-400" />
+                      <span>{currentFacingMode === 'user' ? 'Front Cam' : 'Rear Cam'}</span>
+                    </button>
+                  )}
+                  <span className="text-xs font-mono text-slate-400">
+                    {cameraReady ? '● 1080p Live' : 'Connecting...'}
+                  </span>
+                </div>
               </div>
 
               {/* Video Container */}
@@ -439,24 +452,25 @@ export default function InterviewView({
                   ref={videoRef}
                   autoPlay
                   playsInline
+                  webkit-playsinline="true"
                   muted
                   className="w-full h-full object-cover"
-                  style={{ transform: 'scaleX(-1)' }}
+                  style={{ transform: currentFacingMode === 'user' ? 'scaleX(-1)' : 'none' }}
                 />
 
                 {!cameraReady && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-[#0d0e17]/95 text-center z-10 space-y-2">
                     <Video className="w-7 h-7 text-indigo-400 animate-pulse" />
                     <p className="text-xs font-medium text-slate-300">
-                      {cameraError ? cameraError : 'Initializing camera feed…'}
+                      {cameraError ? cameraError : 'Initializing front camera…'}
                     </p>
                     <button
                       type="button"
-                      onClick={() => startCamera && startCamera()}
+                      onClick={() => startCamera && startCamera('user')}
                       className="px-3.5 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-xs font-bold text-indigo-200 transition-all flex items-center gap-1.5"
                     >
                       <Camera className="w-3.5 h-3.5" />
-                      <span>{cameraError ? 'Retry Camera Access' : 'Enable Camera'}</span>
+                      <span>{cameraError ? 'Retry Front Camera' : 'Enable Front Camera'}</span>
                     </button>
                   </div>
                 )}
@@ -473,10 +487,10 @@ export default function InterviewView({
 
                 <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 text-[10px] font-mono">
                   <span className="px-2.5 py-1 rounded-lg bg-black/70 text-emerald-300 border border-emerald-500/30">
-                    {faceCount === 1 ? '👤 Face Verified' : faceCount > 1 ? 'Multiple Faces' : 'Checking face...'}
+                    {faceCount === 1 ? '👤 Face Verified' : faceCount > 1 ? 'Multiple Faces' : 'Front Face Checking...'}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg bg-black/70 text-slate-300">
-                    Zero Cloud Upload
+                    {currentFacingMode === 'user' ? 'Front Lens' : 'Rear Lens'}
                   </span>
                 </div>
               </div>

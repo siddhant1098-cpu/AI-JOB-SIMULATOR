@@ -5,21 +5,73 @@ const NO_FACE_THRESHOLD_MS = 1500;
 const DARK_THRESHOLD = 30; // avg brightness below this = dark frame
 
 /**
+ * getFrontCameraStream — strictly prioritizes front-facing camera on mobile devices
+ * 1. Tries exact 'user' facingMode constraint
+ * 2. Tries device enumeration matching 'front' / 'user' / 'selfie' / 'facetime'
+ * 3. Falls back to ideal 'user' facingMode
+ */
+async function getFrontCameraStream(preferredFacingMode = 'user') {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error('Camera mediaDevices API is not available (browser context may not be secure).');
+  }
+
+  // 1. Try explicit exact facingMode constraint
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { exact: preferredFacingMode },
+        width: { ideal: 480 },
+        height: { ideal: 640 },
+      },
+      audio: false,
+    });
+  } catch (exactErr) {
+    // Exact constraint may throw on devices without explicit facingMode metadata
+  }
+
+  // 2. Try device enumeration to find front camera deviceId
+  if (preferredFacingMode === 'user') {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+      const frontCamera = videoDevices.find((d) => {
+        const label = (d.label || '').toLowerCase();
+        return (
+          label.includes('front') ||
+          label.includes('user') ||
+          label.includes('selfie') ||
+          label.includes('facetime')
+        );
+      });
+
+      if (frontCamera && frontCamera.deviceId) {
+        return await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: { exact: frontCamera.deviceId },
+            width: { ideal: 480 },
+            height: { ideal: 640 },
+          },
+          audio: false,
+        });
+      }
+    } catch (enumErr) {
+      // Enumeration error fallback
+    }
+  }
+
+  // 3. Standard ideal facingMode (broadest browser support on iOS Safari & Android Chrome)
+  return await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: preferredFacingMode },
+      width: { ideal: 480 },
+      height: { ideal: 640 },
+    },
+    audio: false,
+  });
+}
+
+/**
  * useCamera — MediaPipe face detection + real-time mobile phone detection anti-cheat
- *
- * Returns:
- *   videoRef        – attach to <video> element
- *   canvasRef       – hidden canvas for brightness check
- *   startCamera()   – request permission and start video stream
- *   stopCamera()    – stop stream
- *   cameraReady     – boolean
- *   cameraError     – string|null
- *   isBlurred       – boolean (blur the screen)
- *   blurReason      – string explaining why it's blurred
- *   flags           – array of logged flag events
- *   faceCount       – current detected face count
- *   phoneDetected   – boolean (mobile phone in camera frame)
- *   detectorLoaded  – boolean
  */
 export function useCamera(onFlag, strictMode = true) {
   const videoRef = useRef(null);
@@ -40,6 +92,7 @@ export function useCamera(onFlag, strictMode = true) {
   const [faceCount, setFaceCount] = useState(1);
   const [phoneDetected, setPhoneDetected] = useState(false);
   const [detectorLoaded, setDetectorLoaded] = useState(false);
+  const [currentFacingMode, setCurrentFacingMode] = useState('user');
 
   // Debounced flag logger: avoid spamming duplicate events within 5 seconds
   const addFlag = useCallback((reason) => {
@@ -220,8 +273,8 @@ export function useCamera(onFlag, strictMode = true) {
         if (count === 0) {
           if (!noFaceTimerRef.current) {
             noFaceTimerRef.current = setTimeout(() => {
-              triggerBlur('No face visible — please stay in frame');
-              addFlag('Face not visible');
+              triggerBlur('No face visible — please face front camera and stay in frame');
+              addFlag('Face not visible in front camera');
               noFaceTimerRef.current = null;
             }, NO_FACE_THRESHOLD_MS);
           }
@@ -241,16 +294,16 @@ export function useCamera(onFlag, strictMode = true) {
     }
   }, [checkBrightness, triggerBlur, clearBlur, addFlag, cameraReady]);
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (facing = 'user') => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera mediaDevices API is not available (browser context may not be secure).');
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 320, height: 240, facingMode: 'user' },
-        audio: false,
-      });
+
+      const stream = await getFrontCameraStream(facing);
       streamRef.current = stream;
+      setCurrentFacingMode(facing);
       setCameraReady(true);
       setCameraError(null);
 
@@ -258,6 +311,8 @@ export function useCamera(onFlag, strictMode = true) {
         videoRef.current.srcObject = stream;
         videoRef.current.muted = true;
         videoRef.current.playsInline = true;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
         videoRef.current.autoplay = true;
         videoRef.current.play().catch((err) => {
           console.warn('Video auto-playback warning:', err);
@@ -270,6 +325,7 @@ export function useCamera(onFlag, strictMode = true) {
         console.warn('Detector loader caught:', detErr);
       }
 
+      clearInterval(intervalRef.current);
       intervalRef.current = setInterval(runDetection, DETECT_INTERVAL_MS);
     } catch (e) {
       console.warn('startCamera error:', e);
@@ -277,6 +333,11 @@ export function useCamera(onFlag, strictMode = true) {
       setCameraReady(false);
     }
   }, [loadDetectors, runDetection]);
+
+  const toggleFacingMode = useCallback(async () => {
+    const nextMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    await startCamera(nextMode);
+  }, [currentFacingMode, startCamera]);
 
   const stopCamera = useCallback(() => {
     clearInterval(intervalRef.current);
@@ -295,6 +356,8 @@ export function useCamera(onFlag, strictMode = true) {
         videoRef.current.srcObject = streamRef.current;
         videoRef.current.muted = true;
         videoRef.current.playsInline = true;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
         videoRef.current.autoplay = true;
         videoRef.current.play().catch(() => {});
       }
@@ -320,6 +383,8 @@ export function useCamera(onFlag, strictMode = true) {
     canvasRef,
     startCamera,
     stopCamera,
+    toggleFacingMode,
+    currentFacingMode,
     cameraReady,
     cameraError,
     isBlurred,

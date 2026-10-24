@@ -157,19 +157,60 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
 
     const handleVisibility = () => {
       if (document.hidden) {
-        handleFlag('Switched away from browser tab');
-        showToastWarning('⚠️ Tab switched! Leaving the test window is recorded.');
+        handleFlag('Switched away from browser tab or minimized mobile app');
+        showToastWarning('⚠️ Tab / App switch detected! Leaving assessment is recorded.');
       }
+    };
+
+    const handleWindowBlur = () => {
+      handleFlag('Assessment window lost focus (app switch, notification shade, or split-screen)');
+    };
+
+    const handlePageHide = () => {
+      handleFlag('Assessment window hidden (navigated away or mobile app closed)');
     };
 
     window.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('pagehide', handlePageHide);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('pagehide', handlePageHide);
     };
   }, [isStrict, handleFlag, showToastWarning]);
+
+  // ── Screen Wake Lock (Keeps mobile front camera & screen active without dimming) ──
+  useEffect(() => {
+    let wakeLock = null;
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+        } catch {
+          // ignore wakeLock rejection
+        }
+      }
+    };
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLock) {
+        wakeLock.release().catch(() => {});
+      }
+    };
+  }, []);
 
   // ── Timer ───────────────────────────────────────────────────────────────────
   useEffect(() => {
