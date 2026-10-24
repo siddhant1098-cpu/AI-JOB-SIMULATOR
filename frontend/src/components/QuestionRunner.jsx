@@ -28,6 +28,10 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   const [questionElapsedSec, setQuestionElapsedSec] = useState(0);
   const [isAutoSubmitted, setIsAutoSubmitted] = useState(false);
 
+  const answeredRef = useRef(false);
+  const timerRef = useRef(null);
+  const warningTimerRef = useRef(null);
+
   const isPressureMode = !!config.pressureMode;
 
   // Per-question timer for Pressure Mode (60s response deadline)
@@ -55,10 +59,6 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   const pressureRemainingSec = isPressureMode 
     ? (isPressureFrozen ? (isAutoSubmitted ? 0 : Math.max(0, 60 - questionElapsedSec)) : Math.max(0, 60 - questionElapsedSec))
     : null;
-
-  const warningTimerRef = useRef(null);
-  const timerRef = useRef(null);
-  const answeredRef = useRef(false);
 
   const speech = useSpeech();
 

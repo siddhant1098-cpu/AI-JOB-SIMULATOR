@@ -32,9 +32,9 @@ export default class ErrorBoundary extends React.Component {
             <div className="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
               <AlertTriangle className="w-7 h-7" />
             </div>
-            <h2 className="text-xl font-bold tracking-tight">Workspace Session Recovered</h2>
+            <h2 className="text-xl font-bold tracking-tight">Simulation Interface Issue</h2>
             <p className="text-slate-300 text-xs leading-relaxed">
-              A temporary interface issue occurred. Your progress was safely handled.
+              An unexpected interface error was caught. Click below to return to setup or restart fresh.
             </p>
             {this.state.error?.message && (
               <div className="p-3 rounded-xl bg-black/40 border border-white/10 font-mono text-[11px] text-rose-300 text-left overflow-x-auto">
