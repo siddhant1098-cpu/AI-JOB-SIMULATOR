@@ -68,7 +68,7 @@ export default function WorkspaceView({
   handleContextMenu
 }) {
   const { config = {}, questions = [], currentIndex = 0 } = session || {};
-  const { videoRef, cameraReady, cameraError, faceCount = 1, phoneDetected = false, startCamera, toggleFacingMode, currentFacingMode = 'user' } = camera || {};
+  const { videoRef, cameraReady, cameraError, isPermissionDenied, faceCount = 1, phoneDetected = false, startCamera, toggleFacingMode, currentFacingMode = 'user' } = camera || {};
 
   const [activeTab, setActiveTab] = useState('action_plan');
 
@@ -523,19 +523,43 @@ export default function WorkspaceView({
                 />
 
                 {!cameraReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-[#0d0e17]/95 text-center z-10 space-y-2">
-                    <Video className="w-7 h-7 text-purple-400 animate-pulse" />
-                    <p className="text-xs font-medium text-slate-300">
-                      {cameraError ? cameraError : 'Initializing front camera…'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => startCamera && startCamera('user')}
-                      className="px-3.5 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-xs font-bold text-purple-200 transition-all flex items-center gap-1.5"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{cameraError ? 'Retry Front Camera' : 'Enable Front Camera'}</span>
-                    </button>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-3.5 bg-[#0d0e17]/95 text-center z-10 space-y-2">
+                    {isPermissionDenied || (cameraError && cameraError.toLowerCase().includes('denied')) ? (
+                      <>
+                        <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
+                          <Camera className="w-4 h-4" />
+                        </div>
+                        <p className="text-xs font-bold text-white tracking-tight">Camera Blocked in Browser</p>
+                        <div className="p-2 rounded-xl bg-black/60 border border-white/10 text-[10px] text-slate-300 text-left space-y-1 max-w-[280px]">
+                          <p>1. Tap the <strong>tune icon (🎚️)</strong> on left side of URL bar</p>
+                          <p>2. Tap <strong>Permissions</strong> → Set <strong>Camera</strong> to <strong>Allow</strong></p>
+                          <p>3. Tap <strong>Retry Front Camera</strong> below</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => startCamera && startCamera('user')}
+                          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Retry Front Camera</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Video className="w-7 h-7 text-purple-400 animate-pulse" />
+                        <p className="text-xs font-medium text-slate-300">
+                          {cameraError ? cameraError : 'Initializing front camera…'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => startCamera && startCamera('user')}
+                          className="px-3.5 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-xs font-bold text-purple-200 transition-all flex items-center gap-1.5"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>{cameraError ? 'Retry Front Camera' : 'Enable Front Camera'}</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
 

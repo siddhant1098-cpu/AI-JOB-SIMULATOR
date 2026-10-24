@@ -15,59 +15,31 @@ async function getFrontCameraStream(preferredFacingMode = 'user') {
     throw new Error('Camera mediaDevices API is not available (browser context may not be secure).');
   }
 
-  // 1. Try explicit exact facingMode constraint
+  // 1. Standard facingMode constraint (prioritizing front camera on mobile)
   try {
     return await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: { exact: preferredFacingMode },
-        width: { ideal: 480 },
-        height: { ideal: 640 },
+        facingMode: preferredFacingMode === 'user' ? 'user' : 'environment',
+        width: { ideal: 640 },
+        height: { ideal: 480 },
       },
       audio: false,
     });
-  } catch (exactErr) {
-    // Exact constraint may throw on devices without explicit facingMode metadata
-  }
-
-  // 2. Try device enumeration to find front camera deviceId
-  if (preferredFacingMode === 'user') {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
-      const frontCamera = videoDevices.find((d) => {
-        const label = (d.label || '').toLowerCase();
-        return (
-          label.includes('front') ||
-          label.includes('user') ||
-          label.includes('selfie') ||
-          label.includes('facetime')
-        );
-      });
-
-      if (frontCamera && frontCamera.deviceId) {
-        return await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: { exact: frontCamera.deviceId },
-            width: { ideal: 480 },
-            height: { ideal: 640 },
-          },
-          audio: false,
-        });
-      }
-    } catch (enumErr) {
-      // Enumeration error fallback
+  } catch (err) {
+    // If user or browser explicitly blocked permission, do not loop or retry other constraints
+    if (
+      err.name === 'NotAllowedError' || 
+      err.name === 'PermissionDeniedError' || 
+      (err.message && err.message.toLowerCase().includes('denied'))
+    ) {
+      throw err;
     }
+    // If overconstrained or facingMode is not recognized, fallback to generic video: true
+    return await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
+    });
   }
-
-  // 3. Standard ideal facingMode (broadest browser support on iOS Safari & Android Chrome)
-  return await navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: { ideal: preferredFacingMode },
-      width: { ideal: 480 },
-      height: { ideal: 640 },
-    },
-    audio: false,
-  });
 }
 
 /**
@@ -86,6 +58,7 @@ export function useCamera(onFlag, strictMode = true) {
 
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [isPermissionDenied, setIsPermissionDenied] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
   const [blurReason, setBlurReason] = useState('');
   const [flags, setFlags] = useState([]);
@@ -296,6 +269,7 @@ export function useCamera(onFlag, strictMode = true) {
 
   const startCamera = useCallback(async (facing = 'user') => {
     try {
+      setIsPermissionDenied(false);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
@@ -306,6 +280,7 @@ export function useCamera(onFlag, strictMode = true) {
       setCurrentFacingMode(facing);
       setCameraReady(true);
       setCameraError(null);
+      setIsPermissionDenied(false);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -329,7 +304,12 @@ export function useCamera(onFlag, strictMode = true) {
       intervalRef.current = setInterval(runDetection, DETECT_INTERVAL_MS);
     } catch (e) {
       console.warn('startCamera error:', e);
-      setCameraError(e.message || 'Camera access denied');
+      const isDenied =
+        e.name === 'NotAllowedError' ||
+        e.name === 'PermissionDeniedError' ||
+        (e.message && e.message.toLowerCase().includes('denied'));
+      setIsPermissionDenied(isDenied);
+      setCameraError(isDenied ? 'Permission denied' : (e.message || 'Camera access error'));
       setCameraReady(false);
     }
   }, [loadDetectors, runDetection]);
@@ -387,6 +367,7 @@ export function useCamera(onFlag, strictMode = true) {
     currentFacingMode,
     cameraReady,
     cameraError,
+    isPermissionDenied,
     isBlurred,
     blurReason,
     flags,

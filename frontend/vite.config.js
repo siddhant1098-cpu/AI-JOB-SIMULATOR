@@ -7,6 +7,10 @@ export default defineConfig({
     port: 5173,
     host: true,
     allowedHosts: true,
+    headers: {
+      'Permissions-Policy': 'camera=(self "*"), microphone=(self "*")',
+      'Access-Control-Allow-Origin': '*',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
