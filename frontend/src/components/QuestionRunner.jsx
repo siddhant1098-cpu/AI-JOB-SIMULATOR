@@ -26,18 +26,35 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   const [cameraFlags, setCameraFlags] = useState(sessionFlags || []);
   const [cheatWarning, setCheatWarning] = useState(null);
   const [questionElapsedSec, setQuestionElapsedSec] = useState(0);
+  const [isAutoSubmitted, setIsAutoSubmitted] = useState(false);
+
+  const isPressureMode = !!config.pressureMode;
 
   // Per-question timer for Pressure Mode (60s response deadline)
   useEffect(() => {
     setQuestionElapsedSec(0);
-    const qTimer = setInterval(() => {
-      setQuestionElapsedSec((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(qTimer);
+    setIsAutoSubmitted(false);
   }, [currentIndex, isFollowUp]);
 
-  const isPressureMode = !!config.pressureMode;
-  const pressureRemainingSec = isPressureMode ? Math.max(0, 60 - questionElapsedSec) : null;
+  useEffect(() => {
+    if (!isPressureMode) return;
+    // Freeze and stop timer immediately if evaluating, evaluated, or answer submitted
+    if (phase === 'evaluating' || feedback || answeredRef.current) return;
+
+    const qTimer = setInterval(() => {
+      setQuestionElapsedSec((s) => {
+        if (s >= 60) return 60;
+        return s + 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(qTimer);
+  }, [isPressureMode, currentIndex, isFollowUp, phase, feedback]);
+
+  const isPressureFrozen = answeredRef.current || phase === 'evaluating' || !!feedback;
+  const pressureRemainingSec = isPressureMode 
+    ? (isPressureFrozen ? (isAutoSubmitted ? 0 : Math.max(0, 60 - questionElapsedSec)) : Math.max(0, 60 - questionElapsedSec))
+    : null;
 
   const warningTimerRef = useRef(null);
   const timerRef = useRef(null);
@@ -209,15 +226,19 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   useEffect(() => {
     if (!isPressureMode) return;
     if (questionElapsedSec >= 60 && !answeredRef.current && phase !== 'evaluating' && !feedback) {
+      setIsAutoSubmitted(true);
       showToastWarning('⏱️ 60-Second Deadline Expired! Auto-submitting response...');
-      handleSubmitAnswer();
+      handleSubmitAnswer(true);
     }
   }, [isPressureMode, questionElapsedSec, phase, feedback]);
 
   // ── Submit Answer ───────────────────────────────────────────────────────────
-  const handleSubmitAnswer = async () => {
+  const handleSubmitAnswer = async (fromAutoSubmit = false) => {
     if (answeredRef.current) return;
     answeredRef.current = true;
+    if (fromAutoSubmit) {
+      setIsAutoSubmitted(true);
+    }
 
     speech.stopListening();
     if (typeof speech.stop === 'function') speech.stop();
@@ -354,9 +375,11 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
     elapsedSec,
     isPressureMode,
     pressureRemainingSec,
+    isAutoSubmitted,
     onNextQuestion: handleNext,
     onSubmitAnswer: handleSubmitAnswer,
     onRedoAnswer: handleRedo,
+    onFinishSession: onFinish,
     cheatWarning,
     showVoicePanel,
     setShowVoicePanel,

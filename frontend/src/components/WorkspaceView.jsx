@@ -57,6 +57,8 @@ export default function WorkspaceView({
   onNextQuestion,
   onSubmitAnswer,
   onRedoAnswer,
+  onFinishSession,
+  isAutoSubmitted,
   cheatWarning,
   showVoicePanel,
   setShowVoicePanel,
@@ -137,12 +139,18 @@ export default function WorkspaceView({
           {/* 60s Pressure Room Timer (When Pressure Mode is Active) */}
           {isPressureMode && (
             <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-mono text-xs font-black shadow-lg ${
-              (pressureRemainingSec ?? 60) <= 15
-                ? 'border-rose-400 text-rose-300 bg-rose-500/30 animate-ping'
-                : 'border-amber-400/60 text-amber-300 bg-amber-500/20 animate-pulse'
+              feedback || isEvaluating
+                ? 'border-slate-600 text-slate-400 bg-slate-800/40'
+                : (pressureRemainingSec ?? 60) <= 15
+                ? 'border-rose-400 text-rose-300 bg-rose-500/30 animate-pulse'
+                : 'border-amber-400/60 text-amber-300 bg-amber-500/20'
             }`}>
               <Timer className="w-4 h-4 text-amber-400" />
-              <span>PRESSURE {pressureRemainingSec}s</span>
+              <span>
+                {feedback || isEvaluating
+                  ? 'PRESSURE 0s [STOPPED]'
+                  : `PRESSURE ${pressureRemainingSec}s`}
+              </span>
             </div>
           )}
 
@@ -166,12 +174,26 @@ export default function WorkspaceView({
 
       {/* Pressure Mode High Urgency Banner (when Pressure Mode is enabled) */}
       {isPressureMode && (
-        <div className="w-full bg-gradient-to-r from-amber-600/20 via-orange-600/30 to-amber-600/20 border-b border-amber-500/40 py-2.5 px-6 sm:px-10 flex items-center justify-between text-xs font-bold text-amber-200">
+        <div className={`w-full py-2.5 px-6 sm:px-10 flex items-center justify-between text-xs font-bold border-b transition-all ${
+          feedback || isEvaluating
+            ? 'bg-slate-900/60 border-slate-700/60 text-slate-300'
+            : 'bg-gradient-to-r from-amber-600/20 via-orange-600/30 to-amber-600/20 border-amber-500/40 text-amber-200'
+        }`}>
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span>PRESSURE ROOM ACTIVE: 60-second strict response deadline per scenario round.</span>
+            <Zap className={`w-4 h-4 ${feedback || isEvaluating ? 'text-slate-400' : 'text-amber-400 animate-pulse'}`} />
+            <span>
+              {feedback
+                ? isAutoSubmitted
+                  ? 'PRESSURE PROTOCOL: 60-Second Deadline Expired. Operational evaluation report generated below.'
+                  : 'PRESSURE PROTOCOL: Response submitted and evaluated.'
+                : isEvaluating
+                ? 'PRESSURE PROTOCOL: 60s Timer stopped. Evaluating response acumen…'
+                : 'PRESSURE ROOM ACTIVE: 60-second strict response deadline per scenario round.'}
+            </span>
           </div>
-          <span className="font-mono text-amber-300">{pressureRemainingSec}s remaining</span>
+          <span className="font-mono text-amber-300">
+            {feedback || isEvaluating ? 'Time Stopped (0s)' : `${pressureRemainingSec}s remaining`}
+          </span>
         </div>
       )}
 
@@ -238,139 +260,173 @@ export default function WorkspaceView({
               </div>
             </div>
 
-            {/* Action Strategy Console Terminal Card */}
-            <div className={`dash-card p-8 sm:p-10 space-y-6 ${isPressureMode ? 'border-amber-500/40' : ''}`}>
-              
-              {/* Header & Tabs */}
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#282a3e] pb-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-sm font-bold text-white flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-purple-400" />
-                    <span>Response Strategy</span>
-                  </span>
-                </div>
-
-                {/* Speech Dictation Button */}
-                <div className="flex items-center gap-2">
-                  {isListening ? (
-                    <button
-                      onClick={speech.stopListening}
-                      className="px-4 py-2 rounded-xl bg-rose-500/30 border border-rose-400 text-rose-200 text-xs font-bold flex items-center gap-2 animate-pulse"
-                    >
-                      <MicOff className="w-4 h-4" />
-                      <span>Stop Dictation</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => speech.startListening().catch(() => {})}
-                      className="px-4 py-2 rounded-xl bg-[#1e2032] border border-[#282a3e] text-purple-300 hover:text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
-                    >
-                      <Mic className="w-4 h-4 text-purple-400" />
-                      <span>Voice Command</span>
-                    </button>
-                  )}
-                </div>
+            {/* ── STATE 1: EVALUATING SPINNER (No text box) ─── */}
+            {isEvaluating && (
+              <div className="dash-card p-12 flex flex-col items-center justify-center text-center space-y-4 shadow-xl">
+                <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-400 rounded-full animate-spin" />
+                <h3 className="text-lg font-bold text-white tracking-tight">Evaluating Response Acumen…</h3>
+                <p className="text-xs text-slate-400 font-mono max-w-md">
+                  Analyzing situational decision quality, containment urgency, communication etiquette, and business consequences
+                </p>
               </div>
+            )}
 
-              {/* Quick Action Plan Starters */}
-              <div className="flex flex-wrap gap-2.5">
-                <span className="text-xs font-bold text-slate-400 self-center mr-1">Insert Block:</span>
-                <button
-                  type="button"
-                  onClick={() => insertTemplate('1. Immediate Containment & Root Cause:')}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
-                >
-                  + Containment
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertTemplate('2. Step-by-Step Mitigation Plan:')}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
-                >
-                  + Mitigation Steps
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertTemplate('3. Stakeholder Communication Strategy:')}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
-                >
-                  + Comms Strategy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => insertTemplate('4. Preventative Safeguards & SLA Recovery:')}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
-                >
-                  + Preventative
-                </button>
-              </div>
+            {/* ── STATE 2: EVALUATION REPORT CARD (ONLY REPORT IS VISIBLE, NO TEXT BOX) ─── */}
+            {feedback && (
+              <div className="space-y-6 w-full animate-fadeIn">
+                {isAutoSubmitted && (
+                  <div className="p-4 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center justify-between shadow-xl">
+                    <div className="flex items-center gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                      <span>60-Second Deadline Expired: Response was auto-submitted. Critical operational downtime penalties applied.</span>
+                    </div>
+                    <span className="font-mono text-[11px] bg-rose-500/30 px-3 py-1 rounded-lg">Auto-Submitted</span>
+                  </div>
+                )}
 
-              {/* Strategy Textarea */}
-              <div className="space-y-2">
-                <textarea
-                  value={editedTranscript || ''}
-                  onChange={(e) => setEditedTranscript(e.target.value)}
-                  placeholder={
-                    isListening
-                      ? "Listening to your response... Speak clearly into your microphone..."
-                      : `Address ${targetPersonRole} directly with your mitigation strategy, ownership plan, and timeline...`
-                  }
-                  rows={9}
-                  className="w-full dash-input rounded-2xl p-5 text-base font-mono text-slate-100 placeholder-slate-500 resize-none leading-relaxed"
-                />
-              </div>
+                {/* The Evaluation Report */}
+                <FeedbackCard feedback={feedback} />
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                <div className="flex items-center gap-2">
-                  {isReviewing && (
-                    <button
-                      onClick={onRedoAnswer}
-                      className="px-4 py-2.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition-all"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Reset Draft</span>
-                    </button>
-                  )}
-                </div>
+                {/* Post-Report Navigation Controls */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <button
+                    onClick={onFinishSession}
+                    className="px-6 py-3.5 rounded-2xl bg-[#181928] hover:bg-[#202236] border border-[#282a3e] text-slate-200 text-sm font-bold flex items-center gap-2 transition-all shadow-lg"
+                  >
+                    <BarChart3 className="w-4 h-4 text-purple-400" />
+                    <span>View Full Simulation Report</span>
+                  </button>
 
-                <div className="flex items-center gap-4">
-                  {feedback ? (
+                  {currentIndex < questions.length - 1 ? (
                     <button
                       onClick={onNextQuestion}
-                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-base font-bold text-white flex items-center gap-2 shadow-xl"
+                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center gap-2 shadow-xl"
                     >
                       <span>Proceed to Next Phase</span>
                       <Send className="w-4 h-4" />
                     </button>
                   ) : (
                     <button
-                      onClick={onSubmitAnswer}
-                      disabled={!(editedTranscript || '').trim() || isEvaluating}
-                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-base font-bold text-white flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none shadow-xl"
+                      onClick={onFinishSession}
+                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center gap-2 shadow-xl"
                     >
-                      {isEvaluating ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Evaluating Response Acumen…</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Submit Action Strategy</span>
-                          <Send className="w-4 h-4" />
-                        </>
-                      )}
+                      <span>Finish & View Complete Report</span>
+                      <Send className="w-4 h-4" />
                     </button>
                   )}
                 </div>
               </div>
+            )}
 
-            </div>
+            {/* ── STATE 3: ACTION STRATEGY CONSOLE TERMINAL (ONLY VISIBLE BEFORE SUBMISSION) ─── */}
+            {!feedback && !isEvaluating && (
+              <div className={`dash-card p-8 sm:p-10 space-y-6 ${isPressureMode ? 'border-amber-500/40' : ''}`}>
+                
+                {/* Header & Dictation */}
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#282a3e] pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-sm font-bold text-white flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-purple-400" />
+                      <span>Response Strategy</span>
+                    </span>
+                  </div>
 
-            {/* Feedback Card (when evaluated) */}
-            {feedback && (
-              <div className="w-full">
-                <FeedbackCard feedback={feedback} />
+                  {/* Speech Dictation Button */}
+                  <div className="flex items-center gap-2">
+                    {isListening ? (
+                      <button
+                        onClick={speech.stopListening}
+                        className="px-4 py-2 rounded-xl bg-rose-500/30 border border-rose-400 text-rose-200 text-xs font-bold flex items-center gap-2 animate-pulse"
+                      >
+                        <MicOff className="w-4 h-4" />
+                        <span>Stop Dictation</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => speech.startListening().catch(() => {})}
+                        className="px-4 py-2 rounded-xl bg-[#1e2032] border border-[#282a3e] text-purple-300 hover:text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
+                      >
+                        <Mic className="w-4 h-4 text-purple-400" />
+                        <span>Voice Command</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Action Plan Starters */}
+                <div className="flex flex-wrap gap-2.5">
+                  <span className="text-xs font-bold text-slate-400 self-center mr-1">Insert Block:</span>
+                  <button
+                    type="button"
+                    onClick={() => insertTemplate('1. Immediate Containment & Root Cause:')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                  >
+                    + Containment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTemplate('2. Step-by-Step Mitigation Plan:')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                  >
+                    + Mitigation Steps
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTemplate('3. Stakeholder Communication Strategy:')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                  >
+                    + Comms Strategy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTemplate('4. Preventative Safeguards & SLA Recovery:')}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                  >
+                    + Preventative
+                  </button>
+                </div>
+
+                {/* Strategy Textarea */}
+                <div className="space-y-2">
+                  <textarea
+                    value={editedTranscript || ''}
+                    onChange={(e) => setEditedTranscript(e.target.value)}
+                    placeholder={
+                      isListening
+                        ? "Listening to your response... Speak clearly into your microphone..."
+                        : `Address ${targetPersonRole} directly with your mitigation strategy, ownership plan, and timeline...`
+                    }
+                    rows={9}
+                    className="w-full dash-input rounded-2xl p-5 text-base font-mono text-slate-100 placeholder-slate-500 resize-none leading-relaxed"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    {isReviewing && (
+                      <button
+                        onClick={onRedoAnswer}
+                        className="px-4 py-2.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition-all"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Reset Draft</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={onSubmitAnswer}
+                      disabled={!(editedTranscript || '').trim() || isEvaluating}
+                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-base font-bold text-white flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none shadow-xl"
+                    >
+                      <span>Submit Action Strategy</span>
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
               </div>
             )}
 
