@@ -102,7 +102,7 @@ export default function WorkspaceView({
               </span>
             </div>
             <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-tight">
-              {config.company} • Crisis Operations Command
+              {config.company} • Workspace Scenario Console
             </h2>
           </div>
         </div>

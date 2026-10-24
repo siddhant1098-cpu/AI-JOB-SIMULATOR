@@ -195,7 +195,7 @@ Projects:
                 ? 'bg-cyan-500/15 text-cyan-300 border-cyan-400/30' 
                 : 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-400/30'
             }`}>
-              {isInterview ? 'Corporate Telepresence Suite' : 'Incident Command Center'}
+              {isInterview ? 'Corporate Telepresence Suite' : 'Workspace Mode'}
             </span>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
               🛡️ Integrity Protocol Active
@@ -203,12 +203,12 @@ Projects:
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
-            {isInterview ? 'Corporate Candidate Assessment' : 'Enterprise Crisis Operations Simulator'}
+            {isInterview ? 'Corporate Candidate Assessment' : 'Workspace Scenario'}
           </h1>
           <p className="text-slate-400 text-sm sm:text-base mt-1.5 max-w-2xl leading-relaxed">
             {isInterview 
               ? 'Standardized enterprise interview protocol featuring generative AI telepresence, real-time voice analysis, and on-device integrity auditing.'
-              : 'High-stakes workplace crisis simulation platform testing cross-functional incident response, stakeholder management, and executive resolution.'}
+              : 'Real-world workplace scenario challenges testing practical problem-solving, operational judgment, and situational decision-making.'}
           </p>
         </div>
 
@@ -570,7 +570,7 @@ Projects:
               ) : (
                 <>
                   <span>
-                    {isInterview ? 'Enter Virtual Interview Studio' : 'Launch Incident Command Console'}
+                    {isInterview ? 'Enter Virtual Interview Studio' : 'Enter Workspace Scenario'}
                   </span>
                   <ArrowRight className="w-5 h-5" />
                 </>
