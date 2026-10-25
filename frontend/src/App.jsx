@@ -143,7 +143,7 @@ export default function App() {
           </div>
           <div className="w-8 h-8 border-2 border-gray-200 border-t-orange-500 rounded-full animate-spin" />
           <span className="text-sm font-semibold text-gray-500 tracking-wide">
-            Loading SimuWork…
+            Loading PrepRoom…
           </span>
         </div>
       </div>
