@@ -60,7 +60,7 @@ export default function CameraPreview({ camera, strictMode = true }) {
         {/* Minimal Footer */}
         <div className="absolute bottom-0 inset-x-0 bg-white/80 backdrop-blur-md text-center py-1 flex items-center justify-center gap-1.5 text-[10px] text-stone-500 font-medium border-t border-stone-100">
           <span>🔒 On-Device AI</span>
-          {strictMode && <span className="text-purple-600 font-bold">• Strict</span>}
+          {strictMode && <span className="text-orange-600 font-bold">• Strict</span>}
         </div>
 
         {/* Camera error */}
@@ -75,7 +75,7 @@ export default function CameraPreview({ camera, strictMode = true }) {
           <div className="absolute inset-0 bg-stone-100/90 backdrop-blur-xs flex items-center justify-center">
             <button
               onClick={startCamera}
-              className="text-xs font-semibold text-purple-600 hover:text-purple-700 underline"
+              className="text-xs font-semibold text-orange-600 hover:text-orange-700 underline"
             >
               Start Camera
             </button>

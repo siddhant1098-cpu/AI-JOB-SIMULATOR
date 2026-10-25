@@ -18,10 +18,20 @@ cd /d "%~dp0backend"
 REM Auto-create .env from .env.example if missing
 if not exist .env if exist .env.example copy .env.example .env >nul
 
-py -c "import uvicorn, fastapi, pdfplumber" >nul 2>&1 || python -c "import uvicorn, fastapi, pdfplumber" >nul 2>&1
+if exist "venv\Scripts\python.exe" (
+    set "PYTHON_EXE=%~dp0backend\venv\Scripts\python.exe"
+) else (
+    set "PYTHON_EXE=py -3.12"
+)
+
+%PYTHON_EXE% -c "import uvicorn, fastapi, pdfplumber, crewai" >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo Python dependencies not found. Installing requirements...
-    pip install -r requirements.txt || py -m pip install -r requirements.txt
+    if exist "venv\Scripts\pip.exe" (
+        venv\Scripts\pip.exe install -r requirements.txt
+    ) else (
+        py -3.12 -m pip install -r requirements.txt || pip install -r requirements.txt
+    )
 ) else (
     echo Python dependencies are already installed.
 )
@@ -41,7 +51,11 @@ REM 4. Start Servers in separate windows
 echo.
 echo [4/4] Launching Backend and Frontend servers...
 cd /d "%~dp0backend"
-start "AI Job Simulator - Backend" cmd /k "py -m uvicorn main:app --reload --port 8000 || python -m uvicorn main:app --reload --port 8000"
+if exist "venv\Scripts\python.exe" (
+    start "AI Job Simulator - Backend" cmd /k "venv\Scripts\python.exe -m uvicorn main:app --reload --port 8000"
+) else (
+    start "AI Job Simulator - Backend" cmd /k "py -3.12 -m uvicorn main:app --reload --port 8000 || py -m uvicorn main:app --reload --port 8000"
+)
 
 REM 2-second pause to let backend initialize
 ping 127.0.0.1 -n 3 >nul

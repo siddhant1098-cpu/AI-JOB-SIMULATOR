@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSpeech } from '../hooks/useSpeech';
+import { useElevenLabsTTS } from '../hooks/useElevenLabsTTS';
 import { useCamera } from '../hooks/useCamera';
-import { evaluateAnswer } from '../api';
+import { evaluateAnswer, evaluatePrebuiltScenario } from '../api';
 import VoicePanel from './VoicePanel';
 import InterviewView from './InterviewView';
 import WorkspaceView from './WorkspaceView';
@@ -61,6 +62,7 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
     : null;
 
   const speech = useSpeech();
+  const elevenLabs = useElevenLabsTTS();
 
   const showToastWarning = useCallback((msg) => {
     setCheatWarning(msg);
@@ -241,11 +243,14 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
       speech.setTranscript('');
     }
 
-    setPhase('speaking');
-    speech.speak(currentQuestion.text, () => {
-      setPhase('listening');
-      speech.startListening().catch(() => {});
-    });
+    setPhase('listening');
+
+    // Stop any previous TTS playback so old audio doesn't spill over
+    elevenLabs.stopTTS();
+
+    return () => {
+      elevenLabs.stopTTS();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, isFollowUp]);
 
@@ -289,22 +294,50 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
     const finalAnswer = trimmed || (isPressureMode ? '[NO ANSWER PROVIDED - 60s RESPONSE DEADLINE EXPIRED]' : 'No answer provided.');
 
     try {
-      const evaluation = await evaluateAnswer({
-        question_id: currentQuestion.id || `q-${currentIndex}`,
-        question_text: currentQuestion.text,
-        candidate_answer: finalAnswer,
-        domain: config.domain,
-        role: config.role,
-        difficulty: config.difficulty,
-        mode: config.mode,
-        strict_mode: isStrict,
-        candidate_name: config.candidate_name,
-        resume_text: config.resume_text,
-        character: currentQuestion.character,
-        character_authority_level: currentQuestion.character_authority_level,
-        priority: currentQuestion.priority,
-        pressureMode: config.pressureMode,
-      });
+      let evaluation;
+      if (currentQuestion.prebuilt || session?.prebuiltScenario) {
+        const scenarioId = currentQuestion.scenario_id || session?.prebuiltScenario?.id;
+        const res = await evaluatePrebuiltScenario({
+          scenario_id: scenarioId,
+          candidate_answer: finalAnswer,
+          turn_id: isFollowUp ? 2 : 1,
+          completed_scenarios: [scenarioId],
+        });
+        evaluation = {
+          overall_score: res.score,
+          score: res.score,
+          verdict: res.passed ? 'excellent' : 'developing',
+          feedback: res.suggested_approach || 'Evaluated against evidence-based BARS rubric.',
+          consequences: res.selected_branch?.character_reaction || res.selected_branch?.dialogue,
+          criterion_breakdown: res.criterion_breakdown,
+          selected_branch: res.selected_branch,
+          recommendation: res.recommendation,
+          strengths: res.strengths || [],
+          improvement_areas: res.improvements || [],
+          suggested_improved_response: res.suggested_approach,
+          prebuilt: true,
+          follow_up_question: res.selected_branch?.dialogue
+            ? `${res.selected_branch.dialogue} ${res.selected_branch.follow_up_prompt || ''}`
+            : null,
+        };
+      } else {
+        evaluation = await evaluateAnswer({
+          question_id: currentQuestion.id || `q-${currentIndex}`,
+          question_text: currentQuestion.text,
+          candidate_answer: finalAnswer,
+          domain: config.domain,
+          role: config.role,
+          difficulty: config.difficulty,
+          mode: config.mode,
+          strict_mode: isStrict,
+          candidate_name: config.candidate_name,
+          resume_text: config.resume_text,
+          character: currentQuestion.character,
+          character_authority_level: currentQuestion.character_authority_level,
+          priority: currentQuestion.priority,
+          pressureMode: config.pressureMode,
+        });
+      }
 
       setFeedback(evaluation);
 
@@ -361,6 +394,8 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
         follow_up_question: null,
         total: isUnanswered ? 0.7 : 7.0,
       });
+    } finally {
+      setPhase('reviewed');
     }
   };
 
@@ -409,6 +444,7 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
     setEditedTranscript,
     feedback,
     speech,
+    elevenLabs,
     camera,
     isStrict,
     remainingSec,
@@ -431,11 +467,11 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col relative overflow-hidden dash-bg">
+    <div className="w-full h-full flex flex-col relative overflow-hidden bg-gray-50">
       {/* Voice Panel Dropdown (if toggled) */}
       {showVoicePanel && (
-        <div className="fixed top-16 right-4 sm:right-8 z-50 max-w-sm w-full ios-glass-card rounded-2xl p-4 shadow-2xl">
-          <VoicePanel speech={speech} />
+        <div className="fixed top-16 right-4 sm:right-8 z-50 max-w-sm w-full bg-white border border-gray-200 rounded-2xl p-4 shadow-lg">
+          <VoicePanel speech={speech} elevenLabs={elevenLabs} />
         </div>
       )}
 
@@ -445,22 +481,22 @@ export default function QuestionRunner({ session, onUpdateSession, onFinish }) {
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backdropFilter: 'blur(32px)', backgroundColor: 'rgba(7, 9, 19, 0.88)' }}
         >
-          <div className="text-center p-8 max-w-md w-full rounded-3xl ios-glass-panel-active border-rose-500/40 shadow-[0_0_60px_rgba(244,63,94,0.3)]">
+          <div className="text-center p-8 max-w-md w-full rounded-3xl bg-white border border-rose-300 shadow-2xl">
             <div className="text-5xl mb-3 animate-bounce">
               {camera.phoneDetected ? '📱' : '⚠️'}
             </div>
-            <h2 className="text-xl font-extrabold text-white mb-1.5 tracking-tight">
+            <h2 className="text-xl font-extrabold text-gray-900 mb-1.5 tracking-tight">
               {camera.phoneDetected ? 'Mobile Device Detected' : 'Assessment Paused'}
             </h2>
-            <p className="text-slate-300 text-sm leading-relaxed mb-4">
+            <p className="text-gray-600 text-sm leading-relaxed mb-4">
               {camera.blurReason}
             </p>
-            <div className="bg-rose-500/20 border border-rose-500/40 rounded-2xl p-3 text-xs text-rose-200">
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 text-xs text-rose-700">
               {camera.phoneDetected
                 ? 'Please place your phone out of camera sight. The workspace resumes automatically once removed.'
                 : 'Please face the camera and remain in this window to resume.'}
             </div>
-            <p className="text-slate-400 text-[11px] mt-4 font-mono">
+            <p className="text-gray-400 text-[11px] mt-4 font-mono">
               Integrity event recorded on-device • Timer paused
             </p>
           </div>

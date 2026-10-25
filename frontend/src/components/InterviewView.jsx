@@ -22,12 +22,13 @@ import {
   BarChart3
 } from 'lucide-react';
 import FeedbackCard from './FeedbackCard';
+import TTSAudioPlayer from './TTSAudioPlayer';
 import CorporateLogo from './CorporateLogo';
 
 /**
- * InterviewView — Spacious Modern Dark Executive Telepresence Studio
+ * InterviewView — Light Orange Clean Executive Telepresence Studio
  * Unified Theme matching Workspace Scenario:
- * - Spacious layout, modern dark cards (#181928), crisp borders (#282a3e)
+ * - Spacious layout, modern light cards, orange accents
  * - Support for 60s Pressure Room mode countdown
  * - Live conversational AI telepresence & speech transcription
  */
@@ -40,6 +41,7 @@ export default function InterviewView({
   setEditedTranscript,
   feedback,
   speech,
+  elevenLabs,
   camera,
   isStrict,
   remainingSec,
@@ -73,58 +75,58 @@ export default function InterviewView({
 
   return (
     <div 
-      className="flex-1 w-full h-full flex flex-col overflow-y-auto select-none font-sans dash-bg text-slate-100"
+      className="flex-1 w-full h-full flex flex-col overflow-y-auto select-none font-sans bg-gray-50 text-gray-900"
       onCopy={handleCopyAttempt}
       onPaste={handlePasteAttempt}
       onCut={handleCutAttempt}
       onContextMenu={handleContextMenu}
     >
       {/* ── TOP STATUS BAR ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-[#121320]/95 backdrop-blur-2xl border-b border-[#282a3e] px-6 sm:px-10 py-4 flex items-center justify-between gap-6 shadow-xl">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-6 sm:px-10 py-4 flex items-center justify-between gap-6 shadow-sm">
         {/* Left: Brand & Role Information */}
         <div className="flex items-center gap-4">
           <CorporateLogo size="sm" showText={false} />
           <div>
             <div className="flex items-center gap-2.5">
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
                 {config.role || 'Professional Candidate'}
               </h2>
-              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">
                 Studio Room #104
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-gray-500 mt-0.5">
               {config.company || 'Enterprise'} • Division: {config.domain || 'General'}
             </p>
           </div>
         </div>
 
         {/* Center: Progress Bar Tracker */}
-        <div className="hidden lg:flex items-center gap-4 px-4 py-2 rounded-2xl bg-[#181928] border border-[#282a3e]">
-          <span className="text-xs font-bold text-slate-300">
+        <div className="hidden lg:flex items-center gap-4 px-4 py-2 rounded-2xl bg-gray-50 border border-gray-200">
+          <span className="text-xs font-bold text-gray-700">
             {isFollowUp ? 'Follow-up Dialogue' : `Round ${currentIndex + 1} of ${questions?.length || 1}`}
           </span>
-          <div className="w-28 h-2 rounded-full bg-[#121320] overflow-hidden border border-[#282a3e]">
+          <div className="w-28 h-2 rounded-full bg-gray-200 overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500"
               style={{ width: `${Math.max(10, progress)}%` }}
             />
           </div>
-          <span className="text-xs font-mono text-cyan-300 font-bold">{Math.round(progress)}%</span>
+          <span className="text-xs font-mono text-orange-600 font-bold">{Math.round(progress)}%</span>
         </div>
 
         {/* Right: Pressure / Duration Countdown & Controls */}
         <div className="flex items-center gap-3">
           {/* Pressure Mode Badge */}
           {isPressureMode && (
-            <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-mono text-xs font-black shadow-lg ${
+            <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-mono text-xs font-black shadow-sm ${
               feedback || isEvaluating
-                ? 'border-slate-600 text-slate-400 bg-slate-800/40'
+                ? 'border-gray-200 text-gray-500 bg-gray-50'
                 : (pressureRemainingSec ?? 60) <= 15
-                ? 'border-rose-400 text-rose-300 bg-rose-500/30 animate-ping'
-                : 'border-amber-400/60 text-amber-300 bg-amber-500/20 animate-pulse'
+                ? 'border-rose-300 text-rose-700 bg-rose-50 animate-ping'
+                : 'border-amber-300 text-amber-700 bg-amber-50 animate-pulse'
             }`}>
-              <Timer className="w-4 h-4 text-amber-400" />
+              <Timer className="w-4 h-4 text-amber-500" />
               <span>
                 {feedback || isEvaluating
                   ? 'PRESSURE 0s [STOPPED]'
@@ -134,18 +136,18 @@ export default function InterviewView({
           )}
 
           {/* SLA Countdown Timer */}
-          <div className="px-4 py-2 rounded-xl border border-[#282a3e] bg-[#181928] text-slate-200 flex items-center gap-2 font-mono text-xs font-bold">
-            <Clock className="w-4 h-4 text-cyan-400" />
+          <div className="px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 flex items-center gap-2 font-mono text-xs font-bold">
+            <Clock className="w-4 h-4 text-orange-500" />
             <span>{mm}:{ss}</span>
           </div>
 
           {/* Voice Settings button */}
           <button
             onClick={() => setShowVoicePanel(!showVoicePanel)}
-            className="p-2.5 rounded-xl bg-[#181928] border border-[#282a3e] text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1.5"
+            className="p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 hover:text-gray-900 transition-all text-xs flex items-center gap-1.5"
             title="Voice Settings"
           >
-            <Radio className="w-4 h-4 text-indigo-400" />
+            <Radio className="w-4 h-4 text-orange-500" />
             <span className="hidden sm:inline font-semibold">Voice</span>
           </button>
         </div>
@@ -155,11 +157,11 @@ export default function InterviewView({
       {isPressureMode && (
         <div className={`w-full py-2.5 px-6 sm:px-10 flex items-center justify-between text-xs font-bold border-b transition-all ${
           feedback || isEvaluating
-            ? 'bg-slate-900/60 border-slate-700/60 text-slate-300'
-            : 'bg-gradient-to-r from-amber-600/20 via-orange-600/30 to-amber-600/20 border-amber-500/40 text-amber-200'
+            ? 'bg-gray-100 border-gray-200 text-gray-600'
+            : 'bg-amber-50 border-amber-200 text-amber-800'
         }`}>
           <div className="flex items-center gap-2">
-            <Zap className={`w-4 h-4 ${feedback || isEvaluating ? 'text-slate-400' : 'text-amber-400 animate-pulse'}`} />
+            <Zap className={`w-4 h-4 ${feedback || isEvaluating ? 'text-gray-400' : 'text-amber-500 animate-pulse'}`} />
             <span>
               {feedback
                 ? isAutoSubmitted
@@ -170,7 +172,7 @@ export default function InterviewView({
                 : 'PRESSURE ROOM ACTIVE: 60-second response deadline. Prioritize core impact.'}
             </span>
           </div>
-          <span className="font-mono text-amber-300">
+          <span className="font-mono text-amber-700">
             {feedback || isEvaluating ? 'Time Stopped (0s)' : `${pressureRemainingSec}s remaining`}
           </span>
         </div>
@@ -192,261 +194,274 @@ export default function InterviewView({
           <section className="lg:col-span-8 flex flex-col gap-8 w-full">
             
             {/* AI Interviewer Stage Card */}
-            <div className={`dash-card p-8 sm:p-10 relative overflow-hidden space-y-6 ${isPressureMode ? 'dash-card-pressure' : ''}`}>
-              <div className="flex items-start justify-between gap-4 border-b border-[#282a3e] pb-5">
+            <div className={`bg-white border border-gray-200 rounded-2xl shadow-sm p-8 sm:p-10 relative overflow-hidden space-y-6 ${isPressureMode ? 'border-amber-300' : ''}`}>
+              <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-5">
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 p-[1.5px] shadow-[0_0_25px_rgba(6,182,212,0.4)]">
-                      <div className="w-full h-full rounded-[14px] bg-[#121320] flex items-center justify-center">
-                        <Sparkles className="w-7 h-7 text-cyan-300" />
-                      </div>
+                    <div className="w-14 h-14 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center">
+                      <Sparkles className="w-7 h-7 text-orange-600" />
                     </div>
                     {isSpeaking && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-cyan-400 rounded-full animate-ping" />
+                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-orange-400 rounded-full animate-ping" />
                     )}
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2.5">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2.5">
                       <span>AI Executive Interviewer</span>
-                      <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-400/20">
+                      <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">
                         Live Telepresence
                       </span>
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       Evaluating communication clarity, practical acumen, and reasoning.
                     </p>
                   </div>
                 </div>
 
                 {/* Soundwaves / Status Indicator */}
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#121320] border border-[#282a3e]">
-                  {isSpeaking ? (
-                    <div className="flex items-center gap-1 h-5 px-1">
-                      <span className="w-1 bg-cyan-400 rounded-full animate-soundwave-1" />
-                      <span className="w-1 bg-indigo-400 rounded-full animate-soundwave-2" />
-                      <span className="w-1 bg-cyan-400 rounded-full animate-soundwave-3" />
-                      <span className="w-1 bg-purple-400 rounded-full animate-soundwave-4" />
-                      <span className="w-1 bg-cyan-400 rounded-full animate-soundwave-5" />
-                      <span className="text-xs text-cyan-300 font-bold ml-2">Speaking</span>
-                    </div>
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200">
+                  {(isSpeaking || elevenLabs?.isPlaying || elevenLabs?.isLoading) ? (
+                    elevenLabs?.isLoading ? (
+                      <div className="flex items-center gap-2 text-orange-600 text-xs font-bold">
+                        <div className="w-3 h-3 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                        <span>Generating voice…</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 h-5 px-1">
+                        <span className="w-1 bg-orange-500 rounded-full animate-soundwave-1" />
+                        <span className="w-1 bg-orange-400 rounded-full animate-soundwave-2" />
+                        <span className="w-1 bg-orange-500 rounded-full animate-soundwave-3" />
+                        <span className="w-1 bg-orange-400 rounded-full animate-soundwave-4" />
+                        <span className="w-1 bg-orange-500 rounded-full animate-soundwave-5" />
+                        <span className="text-xs text-orange-600 font-bold ml-2">Speaking</span>
+                      </div>
+                    )
                   ) : isListening ? (
-                    <div className="flex items-center gap-2 text-rose-400 text-xs font-bold">
+                    <div className="flex items-center gap-2 text-rose-600 text-xs font-bold">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
                       <span>Listening to you</span>
                     </div>
                   ) : (
-                    <span className="text-xs text-slate-400 font-medium">Ready</span>
+                    <span className="text-xs text-gray-500 font-medium">Ready</span>
                   )}
                 </div>
               </div>
 
               {/* Conversational Question Teleprompter */}
-              <div className="p-6 sm:p-7 rounded-2xl bg-[#121320] border border-[#282a3e] space-y-3">
+              <div className="p-6 sm:p-7 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-cyan-400">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-orange-600">
                       {isFollowUp ? 'Follow-Up Dialogue' : `Interview Question ${currentIndex + 1}`}
                     </span>
                     {currentQuestion?.character && (
-                      <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-400/25">
+                      <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
                         {currentQuestion.character}
                       </span>
                     )}
                     {currentQuestion?.priority && (
                       <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                        currentQuestion.priority === 'P4' ? 'bg-rose-500/20 text-rose-300 border-rose-400/40' :
-                        currentQuestion.priority === 'P3' ? 'bg-amber-500/20 text-amber-300 border-amber-400/40' :
-                        'bg-slate-500/20 text-slate-300 border-slate-400/40'
+                        currentQuestion.priority === 'P4' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                        currentQuestion.priority === 'P3' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        'bg-gray-100 text-gray-600 border-gray-200'
                       }`}>
                         {currentQuestion.priority}
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => speech.speak(currentQuestion?.text)}
-                    className="p-2 rounded-xl bg-[#181928] border border-[#282a3e] text-slate-300 hover:text-white transition-all"
-                    title="Replay Audio"
-                  >
-                    <Volume2 className="w-4 h-4 text-cyan-300" />
-                  </button>
+                  <TTSAudioPlayer
+                    ttsState={elevenLabs?.ttsState || 'idle'}
+                    ttsError={elevenLabs?.ttsError}
+                    ttsProgress={elevenLabs?.ttsProgress || 0}
+                    onPause={() => elevenLabs?.pauseTTS()}
+                    onResume={() => elevenLabs?.resumeTTS()}
+                    onReplay={() => {
+                      elevenLabs?.replayTTS(currentQuestion?.text, {
+                        character: currentQuestion?.character || 'Interviewer',
+                        characterAuthorityLevel: currentQuestion?.character_authority_level || 3,
+                        priority: currentQuestion?.priority || 'P2',
+                      });
+                    }}
+                    compact={true}
+                  />
                 </div>
-                <p className="text-xl sm:text-2xl font-medium text-slate-100 leading-relaxed pt-1">
+                <p className="text-xl sm:text-2xl font-medium text-gray-900 leading-relaxed pt-1">
                   "{currentQuestion?.text}"
                 </p>
               </div>
 
+            </div>
+
+            {/* ── STATE 1: EVALUATING SPINNER (No text box) ─── */}
+            {isEvaluating && !feedback && (
+              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-12 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                <h3 className="text-lg font-bold text-gray-900 tracking-tight">Evaluating Spoken Response…</h3>
+                <p className="text-xs text-gray-500 font-mono max-w-md">
+                  Analyzing communication clarity, professional etiquette, role-specific judgment, and practical solution
+                </p>
               </div>
+            )}
 
-              {/* ── STATE 1: EVALUATING SPINNER (No text box) ─── */}
-              {isEvaluating && (
-                <div className="dash-card p-12 flex flex-col items-center justify-center text-center space-y-4 shadow-xl">
-                  <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" />
-                  <h3 className="text-lg font-bold text-white tracking-tight">Evaluating Spoken Response…</h3>
-                  <p className="text-xs text-slate-400 font-mono max-w-md">
-                    Analyzing communication clarity, professional etiquette, role-specific judgment, and practical solution
-                  </p>
-                </div>
-              )}
-
-              {/* ── STATE 2: EVALUATION REPORT CARD (ONLY REPORT IS VISIBLE, NO TEXT BOX) ─── */}
-              {feedback && (
-                <div className="space-y-6 w-full animate-fadeIn">
-                  {isAutoSubmitted && (
-                    <div className="p-4 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center justify-between shadow-xl">
-                      <div className="flex items-center gap-2.5">
-                        <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-                        <span>60-Second Deadline Expired: Response was auto-submitted. Strict operational penalties applied.</span>
-                      </div>
-                      <span className="font-mono text-[11px] bg-rose-500/30 px-3 py-1 rounded-lg">Auto-Submitted</span>
+            {/* ── STATE 2: EVALUATION REPORT CARD (ONLY REPORT IS VISIBLE, NO TEXT BOX) ─── */}
+            {feedback && (
+              <div className="space-y-6 w-full animate-fadeIn">
+                {isAutoSubmitted && (
+                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-700 text-xs font-bold flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-2.5">
+                      <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                      <span>60-Second Deadline Expired: Response was auto-submitted. Strict operational penalties applied.</span>
                     </div>
-                  )}
+                    <span className="font-mono text-[11px] bg-rose-100 px-3 py-1 rounded-lg">Auto-Submitted</span>
+                  </div>
+                )}
 
-                  {/* The Evaluation Report */}
-                  <FeedbackCard feedback={feedback} />
+                {/* The Evaluation Report */}
+                <FeedbackCard feedback={feedback} />
 
-                  {/* Post-Report Navigation Controls */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                {/* Post-Report Navigation Controls */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <button
+                    onClick={onFinishSession}
+                    className="px-6 py-3.5 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-sm font-bold flex items-center gap-2 transition-all shadow-sm"
+                  >
+                    <BarChart3 className="w-4 h-4 text-orange-500" />
+                    <span>View Full Simulation Report</span>
+                  </button>
+
+                  {currentIndex < questions.length - 1 ? (
+                    <button
+                      onClick={onNextQuestion}
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3.5 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all"
+                    >
+                      <span>Proceed to Next Round</span>
+                      <Send className="w-4 h-4" />
+                    </button>
+                  ) : (
                     <button
                       onClick={onFinishSession}
-                      className="px-6 py-3.5 rounded-2xl bg-[#181928] hover:bg-[#202236] border border-[#282a3e] text-slate-200 text-sm font-bold flex items-center gap-2 transition-all shadow-lg"
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3.5 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all"
                     >
-                      <BarChart3 className="w-4 h-4 text-indigo-400" />
-                      <span>View Full Simulation Report</span>
+                      <span>Complete Interview & View Final Report</span>
+                      <Send className="w-4 h-4" />
                     </button>
+                  )}
+                </div>
+              </div>
+            )}
 
-                    {currentIndex < questions.length - 1 ? (
+            {/* ── STATE 3: ANSWER INPUT WORKSPACE (ONLY VISIBLE BEFORE SUBMISSION) ─── */}
+            {!feedback && !isEvaluating && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold uppercase tracking-wider text-gray-700 flex items-center gap-2">
+                    <User className="w-4 h-4 text-orange-500" />
+                    <span>Your Spoken Response</span>
+                  </label>
+                  {isStrict && (
+                    <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                      🛡️ Strict Integrity Active
+                    </span>
+                  )}
+                </div>
+
+                {/* Textarea / Live Speech Transcript */}
+                <div className="relative">
+                  <textarea
+                    value={editedTranscript || ''}
+                    onChange={(e) => setEditedTranscript(e.target.value)}
+                    placeholder={
+                      isListening 
+                        ? "Listening to your spoken answer... Speak clearly into your microphone..." 
+                        : "Click 'Speak Answer' to talk, or formulate your response here..."
+                    }
+                    rows={6}
+                    className="w-full bg-white border border-gray-200 rounded-2xl p-5 text-base text-gray-900 placeholder-gray-400 resize-none transition-all focus:outline-none focus:border-orange-400"
+                  />
+
+                  {/* Mic Floating Action Button inside Textarea */}
+                  <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                    {isListening ? (
                       <button
-                        onClick={onNextQuestion}
-                        className="dash-btn-primary px-8 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center gap-2 shadow-xl"
+                        onClick={speech.stopListening}
+                        className="px-4 py-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-700 text-xs font-bold flex items-center gap-2 animate-pulse"
                       >
-                        <span>Proceed to Next Round</span>
-                        <Send className="w-4 h-4" />
+                        <MicOff className="w-4 h-4" />
+                        <span>Stop Dictation</span>
                       </button>
                     ) : (
                       <button
-                        onClick={onFinishSession}
-                        className="dash-btn-primary px-8 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center gap-2 shadow-xl"
+                        onClick={() => speech.startListening().catch(() => {})}
+                        className="px-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 hover:text-gray-900 text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
                       >
-                        <span>Complete Interview & View Final Report</span>
-                        <Send className="w-4 h-4" />
+                        <Mic className="w-4 h-4 text-orange-500" />
+                        <span>Speak Answer</span>
                       </button>
                     )}
                   </div>
                 </div>
-              )}
 
-              {/* ── STATE 3: ANSWER INPUT WORKSPACE (ONLY VISIBLE BEFORE SUBMISSION) ─── */}
-              {!feedback && !isEvaluating && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                      <User className="w-4 h-4 text-cyan-400" />
-                      <span>Your Spoken Response</span>
-                    </label>
-                    {isStrict && (
-                      <span className="text-xs font-mono text-emerald-300 bg-emerald-500/15 border border-emerald-400/30 px-2.5 py-0.5 rounded-full">
-                        🛡️ Strict Integrity Active
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Textarea / Live Speech Transcript */}
-                  <div className="relative">
-                    <textarea
-                      value={editedTranscript || ''}
-                      onChange={(e) => setEditedTranscript(e.target.value)}
-                      placeholder={
-                        isListening 
-                          ? "Listening to your spoken answer... Speak clearly into your microphone..." 
-                          : "Click 'Speak Answer' to talk, or formulate your response here..."
-                      }
-                      rows={6}
-                      className="w-full dash-input rounded-2xl p-5 text-base text-slate-100 placeholder-slate-500 resize-none transition-all"
-                    />
-
-                    {/* Mic Floating Action Button inside Textarea */}
-                    <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                      {isListening ? (
-                        <button
-                          onClick={speech.stopListening}
-                          className="px-4 py-2 rounded-xl bg-rose-500/30 border border-rose-400 text-rose-200 text-xs font-bold flex items-center gap-2 animate-pulse"
-                        >
-                          <MicOff className="w-4 h-4" />
-                          <span>Stop Dictation</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => speech.startListening().catch(() => {})}
-                          className="px-4 py-2 rounded-xl bg-[#181928] border border-[#282a3e] text-cyan-300 hover:text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
-                        >
-                          <Mic className="w-4 h-4 text-cyan-400" />
-                          <span>Speak Answer</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                    <div className="flex items-center gap-2">
-                      {isReviewing && (
-                        <button
-                          onClick={onRedoAnswer}
-                          className="dash-btn-secondary px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                          <span>Reset Answer</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-4">
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <div className="flex items-center gap-2">
+                    {isReviewing && (
                       <button
-                        onClick={onSubmitAnswer}
-                        disabled={!(editedTranscript || '').trim() || isEvaluating}
-                        className="dash-btn-primary px-8 py-3.5 rounded-2xl text-base font-bold text-white flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none shadow-xl"
+                        onClick={onRedoAnswer}
+                        className="px-5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-all"
                       >
-                        <span>Submit Response</span>
-                        <Send className="w-4 h-4" />
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Reset Answer</span>
                       </button>
-                    </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={onSubmitAnswer}
+                      disabled={!(editedTranscript || '').trim() || isEvaluating}
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3.5 rounded-2xl text-base font-bold flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none shadow-sm transition-all"
+                    >
+                      <span>Submit Response</span>
+                      <Send className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
           </section>
 
           {/* ── RIGHT COLUMN (lg:col-span-4): HUD & 8 DIMENSIONS ──────────────── */}
           <aside className="lg:col-span-4 flex flex-col gap-8 w-full">
             
             {/* Candidate Video Stream Frame */}
-            <div className="dash-card p-7 space-y-4">
-              <div className="flex items-center justify-between border-b border-[#282a3e] pb-3">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-7 space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-3">
                 <div className="flex items-center gap-2.5">
                   <span className={`w-2.5 h-2.5 rounded-full ${cameraReady ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">Candidate Feed</span>
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Candidate Feed</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {cameraReady && (
                     <button
                       type="button"
                       onClick={() => toggleFacingMode && toggleFacingMode()}
-                      className="px-2 py-1 rounded-lg bg-[#121320] hover:bg-[#1a1c2e] border border-[#282a3e] text-slate-300 hover:text-white transition-all text-[10px] font-mono flex items-center gap-1 shadow-sm"
+                      className="px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900 transition-all text-[10px] font-mono flex items-center gap-1 shadow-sm"
                       title="Switch between front and rear camera"
                     >
-                      <RotateCcw className="w-2.5 h-2.5 text-indigo-400" />
+                      <RotateCcw className="w-2.5 h-2.5 text-orange-500" />
                       <span>{currentFacingMode === 'user' ? 'Front Cam' : 'Rear Cam'}</span>
                     </button>
                   )}
-                  <span className="text-xs font-mono text-slate-400">
+                  <span className="text-xs font-mono text-gray-500">
                     {cameraReady ? '● 1080p Live' : 'Connecting...'}
                   </span>
                 </div>
               </div>
 
               {/* Video Container */}
-              <div className={`relative rounded-2xl overflow-hidden aspect-video bg-[#0d0e17] border transition-all duration-300 ${
-                phoneDetected ? 'border-rose-500 ring-4 ring-rose-500/30' : 'border-[#282a3e]'
+              <div className={`relative rounded-2xl overflow-hidden aspect-video bg-gray-900 border transition-all duration-300 ${
+                phoneDetected ? 'border-rose-500 ring-4 ring-rose-500/30' : 'border-gray-200'
               }`}>
                 <video
                   ref={videoRef}
@@ -459,7 +474,7 @@ export default function InterviewView({
                 />
 
                 {!cameraReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-3.5 bg-[#0d0e17]/95 text-center z-10 space-y-2">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-3.5 bg-gray-900/95 text-center z-10 space-y-2">
                     {isPermissionDenied || (cameraError && cameraError.toLowerCase().includes('denied')) ? (
                       <>
                         <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
@@ -474,7 +489,7 @@ export default function InterviewView({
                         <button
                           type="button"
                           onClick={() => startCamera && startCamera('user')}
-                          className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
+                          className="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Retry Front Camera</span>
@@ -482,14 +497,14 @@ export default function InterviewView({
                       </>
                     ) : (
                       <>
-                        <Video className="w-7 h-7 text-indigo-400 animate-pulse" />
+                        <Video className="w-7 h-7 text-orange-400 animate-pulse" />
                         <p className="text-xs font-medium text-slate-300">
                           {cameraError ? cameraError : 'Initializing front camera…'}
                         </p>
                         <button
                           type="button"
                           onClick={() => startCamera && startCamera('user')}
-                          className="px-3.5 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-xs font-bold text-indigo-200 transition-all flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 rounded-xl bg-orange-600/30 hover:bg-orange-600/50 border border-orange-400/40 text-xs font-bold text-orange-200 transition-all flex items-center gap-1.5"
                         >
                           <Camera className="w-3.5 h-3.5" />
                           <span>{cameraError ? 'Retry Front Camera' : 'Enable Front Camera'}</span>
@@ -521,28 +536,28 @@ export default function InterviewView({
             </div>
 
             {/* 8 Scoring Dimensions Card */}
-            <div className="dash-card p-7 space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 border-b border-[#282a3e] pb-3">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-7 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 border-b border-gray-200 pb-3">
                 Scoring Dimensions (0-100 Rubric)
               </h4>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
-                  { label: 'Problem Solving', color: 'text-cyan-400' },
-                  { label: 'Decision Making', color: 'text-indigo-400' },
-                  { label: 'Communication', color: 'text-purple-400' },
-                  { label: 'Etiquette', color: 'text-emerald-400' },
-                  { label: 'Prioritisation', color: 'text-amber-400' },
-                  { label: 'Accountability', color: 'text-rose-400' },
-                  { label: 'Teamwork', color: 'text-teal-400' },
-                  { label: 'Adaptability', color: 'text-fuchsia-400' },
+                  { label: 'Problem Solving', color: 'text-orange-500' },
+                  { label: 'Decision Making', color: 'text-orange-600' },
+                  { label: 'Communication', color: 'text-orange-500' },
+                  { label: 'Etiquette', color: 'text-emerald-600' },
+                  { label: 'Prioritisation', color: 'text-amber-600' },
+                  { label: 'Accountability', color: 'text-rose-600' },
+                  { label: 'Teamwork', color: 'text-teal-600' },
+                  { label: 'Adaptability', color: 'text-violet-600' },
                 ].map(({ label, color }) => (
-                  <div key={label} className="p-2.5 rounded-xl bg-[#121320] border border-[#282a3e] flex items-center justify-between">
-                    <span className="text-slate-300 text-[11px] font-medium">{label}</span>
+                  <div key={label} className="p-2.5 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
+                    <span className="text-gray-600 text-[11px] font-medium">{label}</span>
                     <span className={`${color} font-mono font-bold text-[10px]`}>0-100</span>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed pt-1">
+              <p className="text-xs text-gray-500 leading-relaxed pt-1">
                 💡 Speak in everyday natural language. Practical judgment is valued over textbook terminology.
               </p>
             </div>

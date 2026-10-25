@@ -59,14 +59,47 @@ export default function App() {
     setIsLoading(true);
     setSetupError(null);
     try {
-      const { items } = await generateQuestions(config);
-      if (!items || !items.length) throw new Error('No questions returned');
-      const newSession = createSession(config);
-      newSession.questions = items;
-      saveSession(newSession);
-      setSession(newSession);
-      setActiveMode(config.mode);
-      setStage('running');
+      if (config.prebuiltScenario) {
+        // PREBUILT SCENARIO: No AI generation called. Load prebuilt scenario directly.
+        const sc = config.prebuiltScenario;
+        const initialQuestion = {
+          id: 1,
+          type: 'scenario',
+          scenario_id: sc.id,
+          text: sc.opening_message,
+          character: `${sc.character.name}, ${sc.character.role}`,
+          character_authority_level: sc.character.authority_level === 'Senior Executive' ? 5 : (sc.character.authority_level === 'Manager' ? 4 : 3),
+          character_voice_profile: sc.character.voice_profile,
+          priority: 'P1',
+          scenario_context: sc.description,
+          objective: `Address ${sc.character.name}'s request with operational ownership, realistic timelines, and high professional composure.`,
+          constraints: [
+            'Maintain professional composure and constructive tone',
+            'Propose actionable solution with realistic delivery checkpoints',
+          ],
+          evaluation_criteria: sc.criteria_names || sc.rubric?.map((c) => c.name) || [],
+          prebuilt: true,
+          rubric: sc.rubric,
+          time_limit_seconds: sc.time_limit_seconds || 60,
+        };
+
+        const newSession = createSession(config);
+        newSession.questions = [initialQuestion];
+        newSession.prebuiltScenario = sc;
+        saveSession(newSession);
+        setSession(newSession);
+        setActiveMode(config.mode);
+        setStage('running');
+      } else {
+        const { items } = await generateQuestions(config);
+        if (!items || !items.length) throw new Error('No questions returned');
+        const newSession = createSession(config);
+        newSession.questions = items;
+        saveSession(newSession);
+        setSession(newSession);
+        setActiveMode(config.mode);
+        setStage('running');
+      }
     } catch (e) {
       setSetupError(e.message);
     } finally {
@@ -103,11 +136,14 @@ export default function App() {
 
   if (stage === 'loading') {
     return (
-      <div className="h-screen w-screen bg-[#070913] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-indigo-500/40 border-t-cyan-400 rounded-full animate-spin" />
-          <span className="text-xs font-mono text-cyan-300 animate-pulse tracking-widest uppercase">
-            Initializing AI Job Simulator…
+      <div className="h-screen w-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-orange-600 flex items-center justify-center animate-pulse">
+            <span className="text-white font-black text-xl">S</span>
+          </div>
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-orange-500 rounded-full animate-spin" />
+          <span className="text-sm font-semibold text-gray-500 tracking-wide">
+            Loading SimuWork…
           </span>
         </div>
       </div>
@@ -116,7 +152,7 @@ export default function App() {
 
   return (
     <ErrorBoundary onReset={handleNewSession}>
-      <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden dash-bg select-none font-sans text-slate-100">
+      <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-gray-50 select-none font-sans text-gray-900">
         
         {/* ── LEFT COLUMN NAVIGATION RAIL ───────────────────────────────────────── */}
         <NavigationRail
@@ -138,7 +174,7 @@ export default function App() {
                 onModeChange={setActiveMode}
               />
               {setupError && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-rose-950/90 border border-rose-500/60 text-rose-200 px-6 py-3 rounded-2xl text-xs sm:text-sm shadow-2xl flex items-center gap-2 backdrop-blur-xl animate-bounce">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-red-600 border border-red-700 text-white px-6 py-3 rounded-2xl text-xs sm:text-sm shadow-2xl flex items-center gap-2 animate-bounce">
                   <AlertCircle className="w-4 h-4 text-rose-400" />
                   <span>{setupError}</span>
                 </div>

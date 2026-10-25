@@ -23,7 +23,15 @@ export function useSpeech() {
   const findBestHumanVoice = (availableVoices) => {
     if (!availableVoices || availableVoices.length === 0) return null;
 
-    // 1. Edge/Chrome online natural voices
+    // 1. Sara / Sarah voices (matches default persona)
+    const saraVoice = availableVoices.find(
+      (v) =>
+        (v.name.toLowerCase().includes('sarah') || v.name.toLowerCase().includes('sara')) &&
+        v.lang.startsWith('en')
+    );
+    if (saraVoice) return saraVoice;
+
+    // 2. Edge/Chrome online natural voices
     const naturalVoice = availableVoices.find(
       (v) =>
         (v.name.includes('Natural') || v.name.includes('Online')) &&
@@ -92,54 +100,11 @@ export function useSpeech() {
     setTranscript('');
   }, []);
 
-  /** Speak text with natural cadence. Returns Promise resolving when speech ends or calls onEnd callback. */
+  /** Browser TTS disabled - audio is exclusively handled by ElevenLabs Sara on Replay */
   const speak = useCallback((text, onEnd) => {
-    return new Promise((resolve) => {
-      const handleDone = () => {
-        setIsSpeaking(false);
-        if (typeof onEnd === 'function') onEnd();
-        resolve();
-      };
-
-      if (!window.speechSynthesis) {
-        handleDone();
-        return;
-      }
-      try {
-        window.speechSynthesis.cancel();
-      } catch {}
-
-      // Clean speech text (strip markdown symbols like *, _, #, backticks)
-      const safeText = String(text || '')
-        .replace(/[*_#`~]/g, '')
-        .replace(/\[.*?\]/g, '')
-        .trim();
-
-      if (!safeText) {
-        handleDone();
-        return;
-      }
-
-      try {
-        const utter = new SpeechSynthesisUtterance(safeText);
-        const selectedVoice =
-          voices.find((v) => v.voiceURI === voiceSettings.voiceURI) ||
-          findBestHumanVoice(voices);
-
-        if (selectedVoice) utter.voice = selectedVoice;
-        utter.rate = voiceSettings.rate || 0.95;
-        utter.pitch = voiceSettings.pitch || 1.0;
-
-        utter.onstart = () => setIsSpeaking(true);
-        utter.onend = handleDone;
-        utter.onerror = handleDone;
-
-        window.speechSynthesis.speak(utter);
-      } catch (e) {
-        handleDone();
-      }
-    });
-  }, [voices, voiceSettings]);
+    if (typeof onEnd === 'function') onEnd();
+    return Promise.resolve();
+  }, []);
 
   const stopSpeaking = useCallback(() => {
     window.speechSynthesis?.cancel();

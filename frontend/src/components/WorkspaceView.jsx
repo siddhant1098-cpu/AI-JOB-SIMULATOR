@@ -29,10 +29,11 @@ import {
   Video
 } from 'lucide-react';
 import FeedbackCard from './FeedbackCard';
+import TTSAudioPlayer from './TTSAudioPlayer';
 import CorporateLogo from './CorporateLogo';
 
 /**
- * WorkspaceView — Spacious Modern Dark Executive Dashboard
+ * WorkspaceView — Light Orange Clean Executive Dashboard
  * Unified Theme:
  * - Clean spacious layout without crowded clutter or fake personal greetings
  * - High-stakes Pressure Mode urgency integration (60s countdown)
@@ -47,6 +48,7 @@ export default function WorkspaceView({
   setEditedTranscript,
   feedback,
   speech,
+  elevenLabs,
   camera,
   isStrict,
   remainingSec,
@@ -92,60 +94,60 @@ export default function WorkspaceView({
 
   return (
     <div 
-      className="flex-1 w-full h-full flex flex-col overflow-y-auto select-none font-sans dash-bg text-slate-100"
+      className="flex-1 w-full h-full flex flex-col overflow-y-auto select-none font-sans bg-gray-50 text-gray-900"
       onCopy={handleCopyAttempt}
       onPaste={handlePasteAttempt}
       onCut={handleCutAttempt}
       onContextMenu={handleContextMenu}
     >
       {/* ── TOP HEADER (SPACIOUS EXECUTIVE STRIP) ───────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-[#121320]/95 backdrop-blur-2xl border-b border-[#282a3e] px-6 sm:px-10 py-4 flex items-center justify-between gap-6 shadow-xl">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-6 sm:px-10 py-4 flex items-center justify-between gap-6 shadow-sm">
         {/* Left: Brand & Incident Status */}
         <div className="flex items-center gap-4">
           <CorporateLogo size="sm" showText={false} />
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="text-xs font-mono font-bold text-purple-400">
+              <span className="text-xs font-mono font-bold text-orange-600">
                 #INC-8492
               </span>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30 flex items-center gap-1.5 animate-pulse">
-                <Flame className="w-3.5 h-3.5 text-rose-400" />
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 flex items-center gap-1.5 animate-pulse">
+                <Flame className="w-3.5 h-3.5 text-rose-500" />
                 SEV-1 ACTIVE
               </span>
-              <span className="hidden sm:inline-block text-xs font-mono text-slate-400">
+              <span className="hidden sm:inline-block text-xs font-mono text-gray-500">
                 {config.domain || 'Enterprise Operations'}
               </span>
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight leading-tight mt-0.5">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight leading-tight mt-0.5">
               Workspace Scenario Console
             </h2>
           </div>
         </div>
 
         {/* Center: Stage Progress Tracker */}
-        <div className="hidden lg:flex items-center gap-4 px-4 py-2 rounded-2xl bg-[#181928] border border-[#282a3e]">
-          <span className="text-xs font-bold text-slate-300">Phase {currentIndex + 1} of {questions?.length || 1}</span>
-          <div className="w-28 h-2 rounded-full bg-[#121320] overflow-hidden border border-[#282a3e]">
+        <div className="hidden lg:flex items-center gap-4 px-4 py-2 rounded-2xl bg-gray-50 border border-gray-200">
+          <span className="text-xs font-bold text-gray-700">Phase {currentIndex + 1} of {questions?.length || 1}</span>
+          <div className="w-28 h-2 rounded-full bg-gray-200 overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500"
               style={{ width: `${Math.max(10, progress)}%` }}
             />
           </div>
-          <span className="text-xs font-mono text-purple-300 font-bold">{Math.round(progress)}%</span>
+          <span className="text-xs font-mono text-orange-600 font-bold">{Math.round(progress)}%</span>
         </div>
 
         {/* Right: Pressure Countdown / SLA & Audio */}
         <div className="flex items-center gap-3">
           {/* 60s Pressure Room Timer (When Pressure Mode is Active) */}
           {isPressureMode && (
-            <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-mono text-xs font-black shadow-lg ${
+            <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-mono text-xs font-black shadow-sm ${
               feedback || isEvaluating
-                ? 'border-slate-600 text-slate-400 bg-slate-800/40'
+                ? 'border-gray-200 text-gray-500 bg-gray-50'
                 : (pressureRemainingSec ?? 60) <= 15
-                ? 'border-rose-400 text-rose-300 bg-rose-500/30 animate-pulse'
-                : 'border-amber-400/60 text-amber-300 bg-amber-500/20'
+                ? 'border-rose-300 text-rose-700 bg-rose-50 animate-pulse'
+                : 'border-amber-300 text-amber-700 bg-amber-50'
             }`}>
-              <Timer className="w-4 h-4 text-amber-400" />
+              <Timer className="w-4 h-4 text-amber-500" />
               <span>
                 {feedback || isEvaluating
                   ? 'PRESSURE 0s [STOPPED]'
@@ -155,18 +157,18 @@ export default function WorkspaceView({
           )}
 
           {/* SLA Countdown Timer */}
-          <div className="px-4 py-2 rounded-xl border border-[#282a3e] bg-[#181928] text-purple-300 flex items-center gap-2 font-mono text-xs font-bold">
-            <Clock className="w-4 h-4 text-purple-400" />
+          <div className="px-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-orange-600 flex items-center gap-2 font-mono text-xs font-bold">
+            <Clock className="w-4 h-4 text-orange-500" />
             <span>SLA {mm}:{ss}</span>
           </div>
 
           {/* Voice Tool */}
           <button
             onClick={() => setShowVoicePanel(!showVoicePanel)}
-            className="p-2.5 rounded-xl bg-[#181928] border border-[#282a3e] text-slate-300 hover:text-white transition-all text-xs flex items-center gap-1.5"
+            className="p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 hover:text-gray-900 transition-all text-xs flex items-center gap-1.5"
             title="Audio settings"
           >
-            <Radio className="w-4 h-4 text-purple-400" />
+            <Radio className="w-4 h-4 text-orange-500" />
             <span className="hidden sm:inline font-semibold">Audio</span>
           </button>
         </div>
@@ -176,11 +178,11 @@ export default function WorkspaceView({
       {isPressureMode && (
         <div className={`w-full py-2.5 px-6 sm:px-10 flex items-center justify-between text-xs font-bold border-b transition-all ${
           feedback || isEvaluating
-            ? 'bg-slate-900/60 border-slate-700/60 text-slate-300'
-            : 'bg-gradient-to-r from-amber-600/20 via-orange-600/30 to-amber-600/20 border-amber-500/40 text-amber-200'
+            ? 'bg-gray-100 border-gray-200 text-gray-600'
+            : 'bg-amber-50 border-amber-200 text-amber-800'
         }`}>
           <div className="flex items-center gap-2">
-            <Zap className={`w-4 h-4 ${feedback || isEvaluating ? 'text-slate-400' : 'text-amber-400 animate-pulse'}`} />
+            <Zap className={`w-4 h-4 ${feedback || isEvaluating ? 'text-gray-400' : 'text-amber-500 animate-pulse'}`} />
             <span>
               {feedback
                 ? isAutoSubmitted
@@ -191,7 +193,7 @@ export default function WorkspaceView({
                 : 'PRESSURE ROOM ACTIVE: 60-second strict response deadline per scenario round.'}
             </span>
           </div>
-          <span className="font-mono text-amber-300">
+          <span className="font-mono text-amber-700">
             {feedback || isEvaluating ? 'Time Stopped (0s)' : `${pressureRemainingSec}s remaining`}
           </span>
         </div>
@@ -215,57 +217,65 @@ export default function WorkspaceView({
           <section className="lg:col-span-8 flex flex-col gap-8 w-full">
             
             {/* Incident Briefing Dossier Card */}
-            <div className={`dash-card p-8 sm:p-10 space-y-6 ${isPressureMode ? 'dash-card-pressure' : ''}`}>
-              <div className="flex items-center justify-between border-b border-[#282a3e] pb-4">
+            <div className={`bg-white border border-gray-200 rounded-2xl shadow-sm p-8 sm:p-10 space-y-6 ${isPressureMode ? 'border-amber-300' : ''}`}>
+              <div className="flex items-center justify-between border-b border-gray-200 pb-4">
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-purple-400" />
-                  <h3 className="text-base font-bold uppercase tracking-wider text-white">
+                  <FileText className="w-5 h-5 text-orange-500" />
+                  <h3 className="text-base font-bold uppercase tracking-wider text-gray-900">
                     Incident Context Briefing
                   </h3>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`text-xs font-mono font-bold px-3 py-1 rounded-full border ${
-                    currentQuestion?.priority === 'P4' ? 'bg-rose-500/20 text-rose-300 border-rose-400/40 animate-pulse' :
-                    currentQuestion?.priority === 'P3' ? 'bg-purple-500/20 text-purple-300 border-purple-400/40' :
-                    'bg-slate-500/20 text-slate-300 border-slate-400/40'
+                    currentQuestion?.priority === 'P4' ? 'bg-rose-50 text-rose-700 border-rose-300 animate-pulse' :
+                    currentQuestion?.priority === 'P3' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                    'bg-gray-100 text-gray-600 border-gray-200'
                   }`}>
                     {currentQuestion?.priority || 'P3 High Priority'}
                   </span>
-                  <button
-                    onClick={() => speech.speak(currentQuestion?.text)}
-                    className="p-2 rounded-xl bg-[#121320] border border-[#282a3e] text-slate-300 hover:text-white transition-all"
-                    title="Read Briefing Aloud"
-                  >
-                    <Volume2 className="w-4 h-4 text-purple-400" />
-                  </button>
+                  <TTSAudioPlayer
+                    ttsState={elevenLabs?.ttsState || 'idle'}
+                    ttsError={elevenLabs?.ttsError}
+                    ttsProgress={elevenLabs?.ttsProgress || 0}
+                    onPause={() => elevenLabs?.pauseTTS()}
+                    onResume={() => elevenLabs?.resumeTTS()}
+                    onReplay={() => {
+                      elevenLabs?.replayTTS(currentQuestion?.text, {
+                        character: currentQuestion?.character || targetPersonRole,
+                        characterAuthorityLevel: currentQuestion?.character_authority_level || 3,
+                        priority: currentQuestion?.priority || 'P3',
+                      });
+                    }}
+                    compact={true}
+                  />
                 </div>
               </div>
 
               {/* Scenario Context Highlight */}
-              <div className="p-6 rounded-2xl bg-[#121320] border border-[#282a3e]">
-                <p className="text-lg sm:text-xl font-medium text-slate-100 leading-relaxed">
+              <div className="p-6 rounded-2xl bg-gray-50 border border-gray-200">
+                <p className="text-lg sm:text-xl font-medium text-gray-900 leading-relaxed">
                   "{currentQuestion?.text}"
                 </p>
               </div>
 
               {/* Stakeholder Interaction Indicator */}
-              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500 pt-1">
                 <div className="flex items-center gap-2">
-                  <User className="w-4 h-4 text-purple-400" />
-                  <span>Addressing Stakeholder: <strong className="text-white text-sm">{targetPersonRole}</strong></span>
+                  <User className="w-4 h-4 text-orange-500" />
+                  <span>Addressing Stakeholder: <strong className="text-gray-900 text-sm">{targetPersonRole}</strong></span>
                 </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-400/30">
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
                   Authority Level {currentQuestion?.character_authority_level || 3}
                 </span>
               </div>
             </div>
 
             {/* ── STATE 1: EVALUATING SPINNER (No text box) ─── */}
-            {isEvaluating && (
-              <div className="dash-card p-12 flex flex-col items-center justify-center text-center space-y-4 shadow-xl">
-                <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-400 rounded-full animate-spin" />
-                <h3 className="text-lg font-bold text-white tracking-tight">Evaluating Response Acumen…</h3>
-                <p className="text-xs text-slate-400 font-mono max-w-md">
+            {isEvaluating && !feedback && (
+              <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-12 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                <h3 className="text-lg font-bold text-gray-900 tracking-tight">Evaluating Response Acumen…</h3>
+                <p className="text-xs text-gray-500 font-mono max-w-md">
                   Analyzing situational decision quality, containment urgency, communication etiquette, and business consequences
                 </p>
               </div>
@@ -275,12 +285,12 @@ export default function WorkspaceView({
             {feedback && (
               <div className="space-y-6 w-full animate-fadeIn">
                 {isAutoSubmitted && (
-                  <div className="p-4 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs font-bold flex items-center justify-between shadow-xl">
+                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-700 text-xs font-bold flex items-center justify-between shadow-sm">
                     <div className="flex items-center gap-2.5">
-                      <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+                      <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
                       <span>60-Second Deadline Expired: Response was auto-submitted. Critical operational downtime penalties applied.</span>
                     </div>
-                    <span className="font-mono text-[11px] bg-rose-500/30 px-3 py-1 rounded-lg">Auto-Submitted</span>
+                    <span className="font-mono text-[11px] bg-rose-100 px-3 py-1 rounded-lg">Auto-Submitted</span>
                   </div>
                 )}
 
@@ -291,16 +301,16 @@ export default function WorkspaceView({
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
                   <button
                     onClick={onFinishSession}
-                    className="px-6 py-3.5 rounded-2xl bg-[#181928] hover:bg-[#202236] border border-[#282a3e] text-slate-200 text-sm font-bold flex items-center gap-2 transition-all shadow-lg"
+                    className="px-6 py-3.5 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 text-sm font-bold flex items-center gap-2 transition-all shadow-sm"
                   >
-                    <BarChart3 className="w-4 h-4 text-purple-400" />
+                    <BarChart3 className="w-4 h-4 text-orange-500" />
                     <span>View Full Simulation Report</span>
                   </button>
 
                   {currentIndex < questions.length - 1 ? (
                     <button
                       onClick={onNextQuestion}
-                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center gap-2 shadow-xl"
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3.5 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all"
                     >
                       <span>Proceed to Next Phase</span>
                       <Send className="w-4 h-4" />
@@ -308,7 +318,7 @@ export default function WorkspaceView({
                   ) : (
                     <button
                       onClick={onFinishSession}
-                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center gap-2 shadow-xl"
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3.5 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-sm transition-all"
                     >
                       <span>Finish & View Complete Report</span>
                       <Send className="w-4 h-4" />
@@ -320,13 +330,13 @@ export default function WorkspaceView({
 
             {/* ── STATE 3: ACTION STRATEGY CONSOLE TERMINAL (ONLY VISIBLE BEFORE SUBMISSION) ─── */}
             {!feedback && !isEvaluating && (
-              <div className={`dash-card p-8 sm:p-10 space-y-6 ${isPressureMode ? 'border-amber-500/40' : ''}`}>
+              <div className={`bg-white border border-gray-200 rounded-2xl shadow-sm p-8 sm:p-10 space-y-6 ${isPressureMode ? 'border-amber-300' : ''}`}>
                 
                 {/* Header & Dictation */}
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#282a3e] pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-sm font-bold text-white flex items-center gap-2">
-                      <Terminal className="w-4 h-4 text-purple-400" />
+                    <span className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-orange-500" />
                       <span>Response Strategy</span>
                     </span>
                   </div>
@@ -336,7 +346,7 @@ export default function WorkspaceView({
                     {isListening ? (
                       <button
                         onClick={speech.stopListening}
-                        className="px-4 py-2 rounded-xl bg-rose-500/30 border border-rose-400 text-rose-200 text-xs font-bold flex items-center gap-2 animate-pulse"
+                        className="px-4 py-2 rounded-xl bg-rose-50 border border-rose-300 text-rose-700 text-xs font-bold flex items-center gap-2 animate-pulse"
                       >
                         <MicOff className="w-4 h-4" />
                         <span>Stop Dictation</span>
@@ -344,9 +354,9 @@ export default function WorkspaceView({
                     ) : (
                       <button
                         onClick={() => speech.startListening().catch(() => {})}
-                        className="px-4 py-2 rounded-xl bg-[#1e2032] border border-[#282a3e] text-purple-300 hover:text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
+                        className="px-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 hover:text-gray-900 text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
                       >
-                        <Mic className="w-4 h-4 text-purple-400" />
+                        <Mic className="w-4 h-4 text-orange-500" />
                         <span>Voice Command</span>
                       </button>
                     )}
@@ -355,32 +365,32 @@ export default function WorkspaceView({
 
                 {/* Quick Action Plan Starters */}
                 <div className="flex flex-wrap gap-2.5">
-                  <span className="text-xs font-bold text-slate-400 self-center mr-1">Insert Block:</span>
+                  <span className="text-xs font-bold text-gray-500 self-center mr-1">Insert Block:</span>
                   <button
                     type="button"
                     onClick={() => insertTemplate('1. Immediate Containment & Root Cause:')}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                    className="px-3.5 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-600 hover:text-gray-900 hover:border-orange-300 transition-all font-medium"
                   >
                     + Containment
                   </button>
                   <button
                     type="button"
                     onClick={() => insertTemplate('2. Step-by-Step Mitigation Plan:')}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                    className="px-3.5 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-600 hover:text-gray-900 hover:border-orange-300 transition-all font-medium"
                   >
                     + Mitigation Steps
                   </button>
                   <button
                     type="button"
                     onClick={() => insertTemplate('3. Stakeholder Communication Strategy:')}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                    className="px-3.5 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-600 hover:text-gray-900 hover:border-orange-300 transition-all font-medium"
                   >
                     + Comms Strategy
                   </button>
                   <button
                     type="button"
                     onClick={() => insertTemplate('4. Preventative Safeguards & SLA Recovery:')}
-                    className="px-3.5 py-1.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs text-slate-300 hover:text-white hover:border-purple-400/40 transition-all font-medium"
+                    className="px-3.5 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-600 hover:text-gray-900 hover:border-orange-300 transition-all font-medium"
                   >
                     + Preventative
                   </button>
@@ -397,7 +407,7 @@ export default function WorkspaceView({
                         : `Address ${targetPersonRole} directly with your mitigation strategy, ownership plan, and timeline...`
                     }
                     rows={9}
-                    className="w-full dash-input rounded-2xl p-5 text-base font-mono text-slate-100 placeholder-slate-500 resize-none leading-relaxed"
+                    className="w-full bg-white border border-gray-200 rounded-2xl p-5 text-base font-mono text-gray-900 placeholder-gray-400 resize-none leading-relaxed focus:outline-none focus:border-orange-400 transition-all"
                   />
                 </div>
 
@@ -407,7 +417,7 @@ export default function WorkspaceView({
                     {isReviewing && (
                       <button
                         onClick={onRedoAnswer}
-                        className="px-4 py-2.5 rounded-xl bg-[#121320] border border-[#282a3e] text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-2 transition-all"
+                        className="px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-xs font-semibold text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-all"
                       >
                         <RotateCcw className="w-4 h-4" />
                         <span>Reset Draft</span>
@@ -419,7 +429,7 @@ export default function WorkspaceView({
                     <button
                       onClick={onSubmitAnswer}
                       disabled={!(editedTranscript || '').trim() || isEvaluating}
-                      className="dash-btn-primary px-8 py-3.5 rounded-2xl text-base font-bold text-white flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none shadow-xl"
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3.5 rounded-2xl text-base font-bold flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none shadow-sm transition-all"
                     >
                       <span>Submit Action Strategy</span>
                       <Send className="w-4 h-4" />
@@ -436,58 +446,66 @@ export default function WorkspaceView({
           <aside className="lg:col-span-4 flex flex-col gap-8 w-full">
             
             {/* Stakeholder Channel & AI Recommendations Card */}
-            <div className="dash-card p-7 space-y-5">
-              <div className="flex items-center justify-between border-b border-[#282a3e] pb-3.5">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-7 space-y-5">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-3.5">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4 text-orange-500" />
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Stakeholder Channel
                   </span>
                 </div>
-                <span className="text-xs font-mono text-purple-300">
+                <span className="text-xs font-mono text-orange-600">
                   Live
                 </span>
               </div>
 
               {/* Chat Bubble from Stakeholder */}
-              <div className="p-4 rounded-xl bg-[#121320] border border-[#282a3e] space-y-2">
+              <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-purple-300">
+                  <span className="text-xs font-bold text-orange-600">
                     {targetPersonRole}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-500">Just now</span>
+                  <span className="text-[10px] font-mono text-gray-400">Just now</span>
                 </div>
-                <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                {elevenLabs?.ttsConfigured && (elevenLabs?.isPlaying || elevenLabs?.isLoading) && (
+                  <div className="flex items-center gap-1 h-3 mt-1">
+                    <span className="w-0.5 bg-orange-400 rounded-full animate-soundwave-1" />
+                    <span className="w-0.5 bg-orange-500 rounded-full animate-soundwave-2" />
+                    <span className="w-0.5 bg-orange-400 rounded-full animate-soundwave-3" />
+                    <span className="text-[10px] text-orange-600 ml-1">Speaking…</span>
+                  </div>
+                )}
+                <p className="text-xs text-gray-900 leading-relaxed font-medium">
                   "Critical services are impacted. Please outline your immediate mitigation plan, containment steps, and recovery timeline."
                 </p>
               </div>
 
               {/* Bulleted Recommendations */}
-              <div className="space-y-2 text-xs text-slate-300 pt-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <div className="space-y-2 text-xs text-gray-700 pt-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-600 block mb-1">
                   Strategy Guidelines:
                 </span>
                 <div className="flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-purple-400 font-bold">•</span>
+                  <span className="text-orange-500 font-bold">•</span>
                   <span><strong>Containment:</strong> State the immediate containment step before technical details.</span>
                 </div>
                 <div className="flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-purple-400 font-bold">•</span>
+                  <span className="text-orange-500 font-bold">•</span>
                   <span><strong>Ownership:</strong> Demonstrate direct accountability and risk visibility.</span>
                 </div>
                 <div className="flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-purple-400 font-bold">•</span>
+                  <span className="text-orange-500 font-bold">•</span>
                   <span><strong>Safeguards:</strong> Close with proactive measures to prevent recurrence.</span>
                 </div>
               </div>
             </div>
 
             {/* Proctor Radar & Camera Stream Frame */}
-            <div className="dash-card p-7 space-y-4">
-              <div className="flex items-center justify-between border-b border-[#282a3e] pb-3">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-7 space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-3">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${cameraReady ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                  <span className="text-xs font-bold text-white tracking-tight">
+                  <span className="text-xs font-bold text-gray-700 tracking-tight">
                     Integrity Proctor Radar
                   </span>
                 </div>
@@ -496,21 +514,21 @@ export default function WorkspaceView({
                     <button
                       type="button"
                       onClick={() => toggleFacingMode && toggleFacingMode()}
-                      className="px-2 py-1 rounded-lg bg-[#121320] hover:bg-[#1a1c2e] border border-[#282a3e] text-slate-300 hover:text-white transition-all text-[10px] font-mono flex items-center gap-1 shadow-sm"
+                      className="px-2 py-1 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900 transition-all text-[10px] font-mono flex items-center gap-1 shadow-sm"
                       title="Switch between front and rear camera"
                     >
-                      <RotateCcw className="w-2.5 h-2.5 text-purple-400" />
+                      <RotateCcw className="w-2.5 h-2.5 text-orange-500" />
                       <span>{currentFacingMode === 'user' ? 'Front Cam' : 'Rear Cam'}</span>
                     </button>
                   )}
-                  <span className="text-xs font-mono text-slate-400">
+                  <span className="text-xs font-mono text-gray-500">
                     {cameraReady ? '● Live' : 'Connecting...'}
                   </span>
                 </div>
               </div>
 
-              <div className={`relative rounded-2xl overflow-hidden aspect-video bg-[#0d0e17] border transition-all ${
-                phoneDetected ? 'border-rose-500 ring-4 ring-rose-500/30' : 'border-[#282a3e]'
+              <div className={`relative rounded-2xl overflow-hidden aspect-video bg-gray-900 border transition-all ${
+                phoneDetected ? 'border-rose-500 ring-4 ring-rose-500/30' : 'border-gray-200'
               }`}>
                 <video
                   ref={videoRef}
@@ -523,7 +541,7 @@ export default function WorkspaceView({
                 />
 
                 {!cameraReady && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-3.5 bg-[#0d0e17]/95 text-center z-10 space-y-2">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-3.5 bg-gray-900/95 text-center z-10 space-y-2">
                     {isPermissionDenied || (cameraError && cameraError.toLowerCase().includes('denied')) ? (
                       <>
                         <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
@@ -538,7 +556,7 @@ export default function WorkspaceView({
                         <button
                           type="button"
                           onClick={() => startCamera && startCamera('user')}
-                          className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
+                          className="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white transition-all flex items-center gap-1.5 shadow-lg active:scale-95"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Retry Front Camera</span>
@@ -546,14 +564,14 @@ export default function WorkspaceView({
                       </>
                     ) : (
                       <>
-                        <Video className="w-7 h-7 text-purple-400 animate-pulse" />
+                        <Video className="w-7 h-7 text-orange-400 animate-pulse" />
                         <p className="text-xs font-medium text-slate-300">
                           {cameraError ? cameraError : 'Initializing front camera…'}
                         </p>
                         <button
                           type="button"
                           onClick={() => startCamera && startCamera('user')}
-                          className="px-3.5 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/40 text-xs font-bold text-purple-200 transition-all flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 rounded-xl bg-orange-600/30 hover:bg-orange-600/50 border border-orange-400/40 text-xs font-bold text-orange-200 transition-all flex items-center gap-1.5"
                         >
                           <Camera className="w-3.5 h-3.5" />
                           <span>{cameraError ? 'Retry Front Camera' : 'Enable Front Camera'}</span>

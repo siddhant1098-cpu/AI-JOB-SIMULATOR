@@ -1,5 +1,6 @@
-// API base URL — in prod this is set via VITE_API_URL env variable
-const BASE = import.meta.env.VITE_API_URL || '';
+// API base URL — in prod this is set via VITE_API_URL env variable (strips trailing slash if provided)
+const RAW_BASE = import.meta.env.VITE_API_URL || '';
+const BASE = RAW_BASE.replace(/\/+$/, '');
 
 async function post(path, body) {
   const res = await fetch(`${BASE}${path}`, {
@@ -72,3 +73,47 @@ export async function uploadAndParseResume(file) {
   }
   return res.json();
 }
+
+export const checkTTSStatus = async () => {
+  const res = await fetch(`${BASE}/api/tts/status`);
+  if (!res.ok) return { configured: false };
+  return res.json();
+};
+
+export const fetchScenarios = async (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.industry) query.append('industry', params.industry);
+  if (params.difficulty) query.append('difficulty', params.difficulty);
+  if (params.skill) query.append('skill', params.skill);
+  const qStr = query.toString() ? `?${query.toString()}` : '';
+  const res = await fetch(`${BASE}/api/scenarios${qStr}`);
+  if (!res.ok) throw new Error('Failed to load scenarios');
+  return res.json();
+};
+
+export const fetchScenarioById = async (scenarioId) => {
+  const res = await fetch(`${BASE}/api/scenarios/${encodeURIComponent(scenarioId)}`);
+  if (!res.ok) throw new Error('Scenario not found');
+  return res.json();
+};
+
+export const evaluatePrebuiltScenario = ({
+  scenario_id,
+  candidate_answer,
+  turn_id = 1,
+  completed_scenarios = [],
+  skill_scores = null,
+}) => post('/api/scenarios/evaluate', {
+  scenario_id,
+  candidate_answer,
+  turn_id,
+  completed_scenarios,
+  skill_scores,
+});
+
+export const fetchScenarioRecommendations = async (completed = []) => {
+  const qStr = completed.length > 0 ? `?completed=${encodeURIComponent(completed.join(','))}` : '';
+  const res = await fetch(`${BASE}/api/scenarios/recommendations${qStr}`);
+  if (!res.ok) throw new Error('Failed to get recommendations');
+  return res.json();
+};

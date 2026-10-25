@@ -11,8 +11,10 @@ import io
 import json
 import os
 import re
+import logging
 import subprocess
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -23,14 +25,21 @@ import google.generativeai as genai
 import pdfplumber
 import json_repair
 
+logger = logging.getLogger("ai_job_sim")
+
 load_dotenv()
 
 app = FastAPI(title="AI Job Simulator API", version="1.1.0")
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
+# Allow local development, Vercel deployments (*.vercel.app), and custom origins via ALLOWED_ORIGINS
+cors_env = os.getenv("ALLOWED_ORIGINS", "*").strip()
+origins_list = [o.strip() for o in cors_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # Tighten to your Vercel URL in production
+    allow_origins=origins_list if "*" not in origins_list else ["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -124,6 +133,14 @@ class Config(BaseModel):
     resume_filename: Optional[str] = None
 
 
+class ScenarioEvaluateRequest(BaseModel):
+    scenario_id: str
+    candidate_answer: str
+    turn_id: int = 1
+    completed_scenarios: Optional[List[str]] = []
+    skill_scores: Optional[dict] = None
+
+
 class QuestionsRequest(BaseModel):
     config: Config
 
@@ -140,6 +157,14 @@ class ReportRequest(BaseModel):
     config: Config
     qa_pairs: List[dict]    # [{question, answer, scores, feedback}]
     flags: List[str] = []   # camera integrity flags
+
+
+class TTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000)
+    character: str = "Interviewer"
+    character_authority_level: int = 3
+    priority: str = "P2"
+    model_id: Optional[str] = None
 
 
 # ── Endpoint: /api/questions ──────────────────────────────────────────────────
@@ -383,28 +408,42 @@ If a candidate hides information, ignores an urgent risk, or makes an unreasonab
 Do not make consequences arbitrary. Base them on the scenario facts and the candidate's actual decisions.
 Not every imperfect answer should cause failure. Allow reasonable alternative approaches.
 
-## FAIR SCORING (0-100 scale)
-Evaluate each response using evidence from the candidate's actual answer.
-Score each dimension from 0 to 100:
-- problem_solving: Did they identify the core issue and propose sensible steps?
-- decision_making: Did they make sound, timely decisions given the constraints?
-- communication: Was their explanation clear, authentic, and appropriate for the audience?
-- etiquette: Did they communicate appropriately for the character's authority level?
-- prioritisation: Did they address the most urgent aspects first?
-- accountability: Did they take ownership rather than deflecting?
-- teamwork: Did they consider others and collaborative solutions?
-- adaptability: Did they show flexibility and resilience?
+## UNIFIED POINT-WISE EVIDENCE-BASED MARKING (100 Total Points)
+You evaluate the candidate's spoken response across 5 explicit competency criteria totaling 100 points:
+1. problem_solving (25 pts): Did they understand the core domain problem and propose a sound, realistic solution?
+2. decision_making (25 pts): Did they make sound, practical decisions given the operational constraints?
+3. communication (20 pts): Was their explanation clear, concise, and appropriate for the listener's authority?
+4. etiquette (15 pts): Did they communicate with appropriate respect, poise, and professional etiquette?
+5. accountability (15 pts): Did they take direct ownership and provide actionable next steps rather than deflecting?
 
-MARKING PHILOSOPHY:
-- Respect human speech: Candidates speak their answers in real-time. Spoken answers are conversational, imperfect, practical.
-- Do NOT be harsh, academic, or pedantic. Value common sense, practical initiative, calm judgment, and empathy.
-- If a candidate gives a thoughtful, realistic answer, grade generously (typically 70-95 out of 100).
-- A sensible practical plan deserves high praise.
-- Do not reward authority-based flattery, unnecessary jargon, excessive formality, or lengthy answers by themselves.
+Assign an integer rating from 0 to 5 for each criterion based strictly on observable behavioral evidence:
+- 5: Exemplary / Outstanding (100% of points)
+- 4: Strong / Proficient (80% of points)
+- 3: Competent / Acceptable (60% of points)
+- 2: Needs Improvement / Developing (40% of points)
+- 1: Poor / Highly Deficient (20% of points)
+- 0: Non-responsive / Trivial Greeting (e.g. 'hello') / Off-topic / Non-substantive (0% of points)
+
+The individual point-wise marking directly and authoritatively decides the final score:
+Points Earned = (Rating / 5.0) * Max Points
+Final Score = Sum of all 5 Criteria Points Earned
+
+MARKING PHILOSOPHY & CALIBRATION:
+- Rigorous, evidence-based assessment: Candidates must demonstrate concrete problem diagnosis, realistic decision-making, and professional communication to earn points.
+- Default to 0: If a response is missing, trivial, greeting-only (e.g., 'hello', 'hi', 'hey'), off-topic, or avoids solving the dilemma, assign a rating of 0 for that criterion (0 points earned).
+- High standards: Do NOT grade generously. A score of 70+ requires a well-structured, actionable response with clear prioritization, risk awareness, and stakeholder management.
+- Rating Calibration (0 to 5):
+  * 0 (0% pts): Non-responsive, trivial greeting, gibberish, evasive, or completely missing.
+  * 1 (20% pts): Highly deficient, counter-productive, or shows dangerous lack of judgment.
+  * 2 (40% pts): Developing / superficial; vague ideas without concrete implementation steps.
+  * 3 (60% pts): Competent / acceptable baseline; solves the immediate issue but lacks depth or foresight.
+  * 4 (80% pts): Strong / proactive; well-structured plan, good empathy, and clear timelines.
+  * 5 (100% pts): Exemplary; outstanding strategic leadership, risk mitigation, and communication.
+- Deterministic Math: Points Earned = (Rating / 5.0) * Max Points. Total Score = Sum of all 5 Criteria Points Earned.
 """
 
-EVALUATE_USER = """Evaluate this candidate's response with empathy, fairness, and evidence-based scoring.
-The response was transcribed from speech — ignore natural filler words, repetitions, and minor transcription quirks.
+EVALUATE_USER = """Evaluate this candidate's response with rigorous, evidence-based scoring against the 5 criteria.
+The response was transcribed from speech.
 
 Question: {question}
 Candidate's response: {answer}
@@ -414,29 +453,29 @@ Scenario Priority: {priority}
 {pressure_note}
 {state_context}
 
-Score each dimension from 0 to 100 using evidence from the candidate's actual answer:
-
-Return JSON:
+Return strictly valid JSON with ratings (integer 0 to 5) and evidence for each of the 5 criteria.
+If the candidate's answer is a trivial greeting (such as 'hello'), off-topic, or non-substantive, rate all criteria 0:
 {{
-  "dimension_scores": {{
-    "problem_solving": <0-100>,
-    "decision_making": <0-100>,
-    "communication": <0-100>,
-    "etiquette": <0-100>,
-    "prioritisation": <0-100>,
-    "accountability": <0-100>,
-    "teamwork": <0-100>,
-    "adaptability": <0-100>
+  "criterion_ratings": {{
+    "problem_solving": <integer 0 to 5>,
+    "decision_making": <integer 0 to 5>,
+    "communication": <integer 0 to 5>,
+    "etiquette": <integer 0 to 5>,
+    "accountability": <integer 0 to 5>
   }},
-  "overall_score": <weighted average 0-100>,
-  "verdict": "excellent|good|average|developing",
-  "evidence_for_scores": "<brief evidence justifying the scores>",
-  "feedback": "<warm 2-3 sentence conversational coaching feedback addressed to 'you'>",
+  "criterion_evidence": {{
+    "problem_solving": "<specific quote or observation>",
+    "decision_making": "<specific quote or observation>",
+    "communication": "<specific quote or observation>",
+    "etiquette": "<specific quote or observation>",
+    "accountability": "<specific quote or observation>"
+  }},
+  "feedback": "<concise 2-3 sentence coaching feedback addressed to 'you'>",
   "strengths": ["<strength 1>", "<strength 2>"],
   "improvement_areas": ["<area 1>", "<area 2>"],
-  "consequences": "<what happens next based on this answer — realistic consequence>",
+  "consequences": "<realistic operational consequence based on candidate's decisions>",
   "suggested_improved_response": "<a practical example of a stronger response in 2-3 sentences>",
-  "do_differently": ["<encouraging tip 1>", "<practical tip 2>"],
+  "do_differently": ["<actionable tip 1>", "<practical tip 2>"],
   "follow_up": "<one friendly conversational follow-up question or null>"
 }}"""
 
@@ -449,49 +488,84 @@ async def evaluate_answer(req: EvaluateRequest):
     authority_level = question_data.get("character_authority_level", 3)
     priority = question_data.get("priority", "P2")
 
-    # Detect if candidate failed to answer (unanswered, empty, or timed out under Pressure Mode)
+    point_definitions = [
+        ("problem_solving", "Domain Knowledge & Problem Solving", 25.0),
+        ("decision_making", "Decision Quality & Practicality", 25.0),
+        ("communication", "Communication Clarity & Tone", 20.0),
+        ("etiquette", "Authority Awareness & Etiquette", 15.0),
+        ("accountability", "Ownership & Actionable Next Steps", 15.0),
+    ]
+
+    # Detect if candidate failed to answer or submitted a trivial / non-substantive response
     answer_text = (req.answer or "").strip()
+    words = [w for w in re.findall(r'\b\w+\b', answer_text.lower())]
+    TRIVIAL_WORDS = {
+        "hello", "hi", "hey", "hola", "howdy", "test", "testing",
+        "ok", "okay", "yes", "no", "pass", "skip", "idk", "nothing",
+        "none", "good", "fine", "cool", "thanks", "thank you"
+    }
+
     is_failed_answer = (
         not answer_text
         or "NO ANSWER PROVIDED" in answer_text.upper()
         or answer_text == "No answer provided."
     )
 
-    if is_failed_answer:
-        # Severe marks penalty for failing to answer within the 60s SLA
-        failure_dim_scores = {
-            "problem_solving": 5.0,
-            "decision_making": 5.0,
-            "communication": 10.0,
-            "etiquette": 10.0,
-            "prioritisation": 5.0,
-            "accountability": 10.0,
-            "teamwork": 5.0,
-            "adaptability": 5.0,
-        }
+    is_trivial_answer = (
+        len(words) < 3 and all(w in TRIVIAL_WORDS or len(w) <= 2 for w in words)
+    ) or (len(words) == 1 and words[0] in TRIVIAL_WORDS)
+
+    if is_failed_answer or is_trivial_answer:
+        failure_breakdown = {}
+        failure_dim_scores = {}
+
+        for key, name, max_pts in point_definitions:
+            failure_breakdown[key] = {
+                "name": name,
+                "weight": max_pts,
+                "rating": 0,
+                "weighted_points": 0.0,
+                "max_points": max_pts,
+                "evidence": f"Candidate provided non-substantive/unresponsive input ('{answer_text[:50]}'). Zero points awarded." if is_trivial_answer else "Candidate failed to submit response within operational window."
+            }
+            failure_dim_scores[key] = 0.0
+
+        failure_dim_scores["prioritisation"] = 0.0
+        failure_dim_scores["teamwork"] = 0.0
+        failure_dim_scores["adaptability"] = 0.0
+
         return {
+            "criterion_breakdown": failure_breakdown,
             "dimension_scores": failure_dim_scores,
-            "overall_score": 7.0,
+            "overall_score": 0.0,
             "verdict": "developing",
-            "evidence_for_scores": "CRITICAL SLA BREACH: Candidate failed to submit any response or decision within the mandatory 60-second operational window. In high-stakes workplace incidents, silence causes complete operational escalation.",
-            "feedback": "CRITICAL SLA BREACH: You did not provide any response within the mandatory 60-second deadline. During an active incident or high-stakes interview, total silence paralyzes the team and destroys executive and stakeholder confidence. Even an immediate acknowledgement with preliminary containment steps is necessary.",
+            "evidence_for_scores": (
+                f"NON-SUBSTANTIVE RESPONSE: Candidate submitted '{answer_text}' without addressing the operational scenario, stakeholder communication, or problem resolution. A substantive action plan is required to earn points."
+                if is_trivial_answer else
+                "CRITICAL SLA BREACH: Candidate failed to submit any response or decision within the mandatory operational window."
+            ),
+            "feedback": (
+                f"Your response '{answer_text}' was trivial or greeting-only and did not address the workplace dilemma. In professional workplace and high-stakes interview scenarios, a substantive response detailing situational awareness, actionable decisions, and stakeholder management is required."
+                if is_trivial_answer else
+                "CRITICAL SLA BREACH: You did not provide any response within the mandatory deadline. Total silence paralyzes the team and destroys executive and stakeholder confidence."
+            ),
             "strengths": [],
             "improvement_areas": [
-                "Failed to formulate or communicate any action plan within the 60-second deadline",
-                "Lack of stakeholder containment communication",
-                "Critical inaction during a time-sensitive operational emergency"
+                "Provide concrete, actionable solutions to the question rather than trivial greetings or filler",
+                "Explicitly outline problem diagnosis and stakeholder containment steps",
+                "Demonstrate ownership and situational awareness"
             ],
-            "consequences": "Due to zero response within the 60s SLA, the incident escalated directly to executive crisis leadership with severe operational downtime and stakeholder escalation.",
-            "suggested_improved_response": "Even under extreme 60-second pressure, immediately state: 'Acknowledging the incident immediately. Containment step 1 is isolating the affected node. Next status update will be delivered in 15 minutes.'",
+            "consequences": "With no substantive response or mitigation provided, the workplace incident escalated immediately.",
+            "suggested_improved_response": "Provide a structured 3-part response: 1. Acknowledge and isolate the problem, 2. Present immediate containment and escalation steps, 3. Commit to realistic stakeholder update cadence.",
             "do_differently": [
-                "Always communicate immediate containment within the first 30 seconds",
-                "Never let the response SLA timer lapse without addressing the stakeholder"
+                "Always deliver a concrete action plan addressing the core dilemma",
+                "Never submit only conversational filler or greetings when an operational solution is requested"
             ],
             "follow_up": None,
-            "correctness": 0.7,
-            "problem_solving": 0.5,
-            "communication": 1.0,
-            "total": 0.7,
+            "correctness": 0.0,
+            "problem_solving": 0.0,
+            "communication": 0.0,
+            "total": 0.0,
         }
 
     pressure_note = (
@@ -520,26 +594,62 @@ async def evaluate_answer(req: EvaluateRequest):
                 pressure_note=pressure_note,
                 state_context=state_context
             ),
-            temperature=0.4
+            temperature=0.3
         )
         data = extract_json(raw)
 
-        # Compute backward-compatible scores for frontend
-        dims = data.get("dimension_scores", {})
-        if dims:
-            # Calculate overall as average of all dimensions
-            all_scores = [v for v in dims.values() if isinstance(v, (int, float))]
-            overall = round(sum(all_scores) / len(all_scores), 1) if all_scores else 70
-            data["overall_score"] = overall
+        ratings_data = data.get("criterion_ratings", {})
+        evidence_data = data.get("criterion_evidence", {})
+        legacy_dims = data.get("dimension_scores", {})
 
-            # Backward compatibility: map to 0-10 scale for old components
-            data["correctness"] = round(dims.get("problem_solving", 70) / 10, 1)
-            data["problem_solving"] = round(dims.get("decision_making", 70) / 10, 1)
-            data["communication"] = round(dims.get("communication", 70) / 10, 1)
-            data["total"] = round(overall / 10, 1)
-        else:
-            # Fallback if dimension_scores not returned
-            data["total"] = round(float(data.get("overall_score", 70)) / 10, 1)
+        criterion_breakdown = {}
+        dimension_scores = {}
+        total_points = 0.0
+
+        for key, name, max_pts in point_definitions:
+            if key in ratings_data:
+                try:
+                    rating = max(0, min(5, int(ratings_data[key])))
+                except (ValueError, TypeError):
+                    rating = 0
+            elif key in legacy_dims:
+                try:
+                    rating = max(0, min(5, round(float(legacy_dims[key]) / 20.0)))
+                except (ValueError, TypeError):
+                    rating = 0
+            else:
+                rating = 0
+
+            pts = round((rating / 5.0) * max_pts, 1)
+            total_points += pts
+            dimension_scores[key] = round((rating / 5.0) * 100, 1)
+
+            criterion_breakdown[key] = {
+                "name": name,
+                "weight": max_pts,
+                "rating": rating,
+                "weighted_points": pts,
+                "max_points": max_pts,
+                "evidence": evidence_data.get(key, "")
+            }
+
+        # Populate secondary dimensions for compatibility with default 0.0
+        dimension_scores["prioritisation"] = dimension_scores.get("decision_making", 0.0)
+        dimension_scores["teamwork"] = dimension_scores.get("etiquette", 0.0)
+        dimension_scores["adaptability"] = dimension_scores.get("accountability", 0.0)
+
+        # TOTAL SCORE IS STRICTLY DECIDED BY THE SUM OF POINT-WISE MARKS
+        overall = round(total_points, 1)
+        data["overall_score"] = overall
+        data["criterion_breakdown"] = criterion_breakdown
+        data["dimension_scores"] = dimension_scores
+        data["verdict"] = "excellent" if overall >= 85 else ("good" if overall >= 70 else ("average" if overall >= 50 else "developing"))
+
+        # Backward compatibility: map to 0-10 scale for old components
+        data["correctness"] = round(dimension_scores.get("problem_solving", 0.0) / 10, 1)
+        data["problem_solving"] = round(dimension_scores.get("decision_making", 0.0) / 10, 1)
+        data["communication"] = round(dimension_scores.get("communication", 0.0) / 10, 1)
+        data["total"] = round(overall / 10, 1)
 
         return data
     except Exception as e:
@@ -593,14 +703,14 @@ Return JSON:
   }}
 }}"""
 
-GRADE_MAP = [(88, "A+"), (78, "A"), (68, "B"), (58, "C")]
+GRADE_MAP = [(88, "A+"), (78, "A"), (68, "B"), (58, "C"), (40, "Developing")]
 
 
 def score_to_grade(score_0_to_100: float) -> str:
     for threshold, grade in GRADE_MAP:
         if score_0_to_100 >= threshold:
             return grade
-    return "Developing"
+    return "Needs Work"
 
 
 @app.post("/api/report")
@@ -609,28 +719,58 @@ async def generate_report(req: ReportRequest):
     if not pairs:
         raise HTTPException(status_code=400, detail="No Q&A pairs provided")
 
-    # Compute averages from dimension_scores (0-100 scale) or fall back to old 0-10 scores
+    # Try multi-agent evaluation & coaching report using CrewAI + Google Gemini
+    try:
+        from crew_service import evaluate_and_generate_report
+        crew_report = evaluate_and_generate_report(
+            config=req.config.dict() if hasattr(req.config, "dict") else dict(req.config),
+            qa_pairs=pairs,
+            flags=req.flags
+        )
+        if crew_report and "overall_score" in crew_report:
+            return crew_report
+    except Exception as crew_err:
+        logger.warning(f"CrewAI report generation bypassed or failed ({crew_err}), using direct LLM report.")
+
+    # Compute averages from dimension_scores (0-100 scale) or criterion_breakdown
     dim_keys = ["problem_solving", "decision_making", "communication", "etiquette", "prioritisation", "accountability", "teamwork", "adaptability"]
     dim_averages = {}
 
     for key in dim_keys:
         vals = []
         for p in pairs:
-            dims = p.get("scores", {}).get("dimension_scores", {})
+            scores = p.get("scores", {})
+            dims = scores.get("dimension_scores", {})
             if key in dims:
                 vals.append(float(dims[key]))
+            # Also check criterion_breakdown from prebuilt scenarios
+            cb = scores.get("criterion_breakdown", {})
+            for c_id, c_data in cb.items():
+                c_skill = str(c_data.get("skill_id", "")).lower().replace("-", "_")
+                if c_skill == key:
+                    vals.append(float((c_data.get("rating", 0) / 5.0) * 100.0))
         if vals:
             dim_averages[key] = round(sum(vals) / len(vals), 1)
         else:
-            dim_averages[key] = 0
+            dim_averages[key] = 0.0
 
-    # Overall score: average of all dimension averages, or fallback to old total
-    if any(v > 0 for v in dim_averages.values()):
-        overall = round(sum(v for v in dim_averages.values() if v > 0) / max(1, sum(1 for v in dim_averages.values() if v > 0)), 1)
+    # Overall score: strictly driven by actual turn scores
+    overall_candidates = []
+    for p in pairs:
+        sc = p.get("scores", {})
+        if "overall_score" in sc and isinstance(sc["overall_score"], (int, float)):
+            overall_candidates.append(float(sc["overall_score"]))
+        elif "score" in sc and isinstance(sc["score"], (int, float)):
+            overall_candidates.append(float(sc["score"]))
+        elif "total" in sc and isinstance(sc["total"], (int, float)):
+            overall_candidates.append(float(sc["total"]) * 10.0)
+
+    if overall_candidates:
+        overall = round(sum(overall_candidates) / len(overall_candidates), 1)
+    elif any(v > 0 for v in dim_averages.values()):
+        overall = round(sum(dim_averages.values()) / max(1, len(dim_averages)), 1)
     else:
-        # Fallback: use old 0-10 total scores, multiply by 10
-        totals = [p.get("scores", {}).get("total", 0) for p in pairs]
-        overall = round((sum(totals) / len(totals)) * 10, 1) if totals else 0
+        overall = 0.0
 
     grade = score_to_grade(overall)
 
@@ -668,9 +808,210 @@ async def generate_report(req: ReportRequest):
             "communication": round(dim_averages.get("communication", 0) / 10, 1),
         }
 
+        # Proctor & Integrity Report
+        flags = req.flags or []
+        integrity_score = max(0, 100 - len(flags) * 15) if flags else 100
+        proctor_verdict = "Verified Clean" if not flags else ("Integrity Warning" if len(flags) <= 2 else "Critical Proctor Violation")
+        data["proctor_report"] = {
+            "integrity_score": integrity_score,
+            "verdict": proctor_verdict,
+            "flags_detected": len(flags),
+            "flag_events": flags,
+            "strict_proctor_active": req.config.strictMode,
+            "face_tracking": "Verified Active" if not any("face" in f.lower() for f in flags) else "Discrepancy Logged",
+            "device_detection": "Clean" if not any("phone" in f.lower() for f in flags) else "Secondary Device Alert",
+            "clipboard_guard": "Clean" if not any("copy" in f.lower() or "paste" in f.lower() for f in flags) else "Clipboard Lock Triggered",
+            "focus_monitoring": "Continuous" if not any("window" in f.lower() or "tab" in f.lower() for f in flags) else "Focus Loss Detected",
+            "summary": data.get("integrity_note") or ("All automated proctoring telemetry verified clean. Continuous multi-modal proctor verified clean." if not flags else f"{len(flags)} integrity events recorded during the assessment.")
+        }
+
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
+
+
+# ── Endpoint: /api/tts ────────────────────────────────────────────────────────
+
+@app.post("/api/tts")
+async def text_to_speech(req: TTSRequest):
+    """Stream ElevenLabs TTS audio for the given text and character."""
+    from tts_service import generate_speech_stream, TTSError, is_tts_configured
+
+    if not is_tts_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Voice service is not configured. Set ELEVENLABS_API_KEY in backend/.env"
+        )
+
+    try:
+        audio_stream = generate_speech_stream(
+            text=req.text,
+            character=req.character,
+            authority_level=req.character_authority_level,
+            priority=req.priority,
+            model_id=req.model_id,
+        )
+        return StreamingResponse(
+            audio_stream,
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "inline",
+                "Cache-Control": "no-cache",
+            },
+        )
+    except TTSError as e:
+        status = 503 if e.retry else 400
+        raise HTTPException(status_code=status, detail=e.user_message)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Voice generation failed. Text is still available.")
+
+
+@app.get("/api/tts/status")
+async def tts_status():
+    """Check if TTS service is configured and available."""
+    from tts_service import is_tts_configured, get_available_characters
+
+    configured = is_tts_configured()
+    return {
+        "configured": configured,
+        "characters": get_available_characters() if configured else {},
+        "message": "ElevenLabs TTS is ready" if configured else "TTS not configured - set ELEVENLABS_API_KEY",
+    }
+
+
+# ── Endpoint: /api/crew/status ────────────────────────────────────────────────
+@app.get("/api/crew/status")
+async def crew_status():
+    """Returns CrewAI orchestration status and active Gemini model."""
+    from crew_service import get_gemini_model_name, is_quality_reviewer_enabled
+    has_gemini_key = bool(os.getenv("GOOGLE_API_KEY", "").strip())
+    return {
+        "status": "ready" if has_gemini_key else "missing_google_api_key",
+        "orchestrator": "CrewAI 1.15",
+        "gemini_model": get_gemini_model_name(),
+        "quality_reviewer_enabled": is_quality_reviewer_enabled(),
+        "free_tier_safe": True
+    }
+
+
+# ── Endpoint: Scenario Library ─────────────────────────────────────────────
+
+@app.get("/api/scenarios")
+async def list_scenarios(
+    industry: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    skill: Optional[str] = None,
+):
+    """
+    List predefined workspace scenarios from the library.
+    Supports filtering by industry, difficulty, and skill category.
+    """
+    from scenario_library import get_all_scenarios_catalog
+
+    catalog = get_all_scenarios_catalog()
+    filtered = []
+
+    for sc in catalog:
+        if industry and not any(industry.lower() in tag.lower() for tag in sc.get("industry_tags", [])):
+            continue
+        if difficulty and sc.get("difficulty", "").lower() != difficulty.lower():
+            continue
+        if skill and not any(skill.lower() in tag.lower() for tag in sc.get("skill_tags", [])):
+            continue
+        filtered.append(sc)
+
+    return {
+        "scenarios": filtered,
+        "total_count": len(catalog),
+        "filtered_count": len(filtered),
+    }
+
+
+@app.get("/api/scenarios/{scenario_id}")
+async def get_scenario(scenario_id: str):
+    """Get detailed information for a single prebuilt scenario."""
+    from scenario_library import PREDEFINED_SCENARIOS
+
+    sc = PREDEFINED_SCENARIOS.get(scenario_id)
+    if not sc:
+        raise HTTPException(status_code=404, detail=f"Scenario '{scenario_id}' not found in library")
+
+    return {
+        "scenario": {
+            "id": sc.id,
+            "title": sc.title,
+            "description": sc.description,
+            "difficulty": sc.difficulty,
+            "industry_tags": sc.industry_tags,
+            "compatible_roles": sc.compatible_roles,
+            "skill_tags": sc.skill_tags,
+            "character": {
+                "name": sc.character.name,
+                "role": sc.character.role,
+                "authority_level": sc.character.authority_level,
+                "communication_style": sc.character.communication_style,
+                "voice_profile": sc.character.voice_profile,
+            },
+            "opening_message": sc.opening_message,
+            "expected_behaviours": sc.expected_behaviours,
+            "critical_mistakes": sc.critical_mistakes,
+            "time_limit_seconds": sc.time_limit_seconds,
+            "pressure_room_compatible": sc.pressure_room_compatible,
+            "rubric": [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "weight": c.weight,
+                    "description": c.description,
+                    "skill_id": c.skill_id,
+                }
+                for c in sc.rubric
+            ],
+            "version": sc.version,
+        }
+    }
+
+
+@app.post("/api/scenarios/evaluate")
+async def evaluate_scenario(req: ScenarioEvaluateRequest):
+    """
+    Evaluates a candidate's response to a prebuilt scenario using the BARS rubric.
+    Deterministically calculates the weighted score, selects the conversational branch,
+    and returns personalized next-step recommendations.
+    """
+    from scenario_library import evaluate_scenario_response, get_scenario_recommendation, PREDEFINED_SCENARIOS
+
+    if req.scenario_id not in PREDEFINED_SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"Scenario '{req.scenario_id}' not found")
+
+    try:
+        eval_result = evaluate_scenario_response(
+            scenario_id=req.scenario_id,
+            candidate_answer=req.candidate_answer,
+            turn_id=req.turn_id,
+            chat_fn=chat,
+        )
+
+        # Append personalized recommendation
+        recommendation = get_scenario_recommendation(
+            completed_scenarios=req.completed_scenarios or [req.scenario_id],
+            skill_scores=req.skill_scores,
+        )
+        eval_result["recommendation"] = recommendation
+
+        return eval_result
+    except Exception as e:
+        logger.error(f"Scenario evaluation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Scenario evaluation failed: {str(e)}")
+
+
+@app.get("/api/scenarios/recommendations")
+async def recommend_scenario(completed: Optional[str] = None):
+    """Returns a personalized scenario recommendation based on completed scenarios."""
+    from scenario_library import get_scenario_recommendation
+
+    completed_list = [c.strip() for c in completed.split(",") if c.strip()] if completed else []
+    return get_scenario_recommendation(completed_scenarios=completed_list)
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
