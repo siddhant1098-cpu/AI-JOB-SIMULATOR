@@ -87,8 +87,12 @@ def extract_json(text: str) -> dict:
     raise ValueError(f"Could not parse valid JSON from text: {text[:200]}")
 
 
+_LAST_WORKING_MODEL: Optional[str] = None
+
+
 def chat(system: str, user: str, temperature: float = 0.7) -> str:
     """Call Gemini and return the text response (always JSON per mime type config)."""
+    global _LAST_WORKING_MODEL
     api_key = os.getenv("GOOGLE_API_KEY", "").strip()
     if not api_key:
         raise ValueError("GOOGLE_API_KEY is not set in backend/.env")
@@ -100,13 +104,25 @@ def chat(system: str, user: str, temperature: float = 0.7) -> str:
         temperature=temperature,
     )
 
-    models_to_try = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
+    preferred_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip()
+
+    # Priority order: known working model first, then preferred, then fast fallbacks
+    models_to_try = []
+    if _LAST_WORKING_MODEL:
+        models_to_try.append(_LAST_WORKING_MODEL)
+    if preferred_model not in models_to_try:
+        models_to_try.append(preferred_model)
+    for candidate in ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash"]:
+        if candidate not in models_to_try:
+            models_to_try.append(candidate)
+
     last_err = None
     for m_name in models_to_try:
         try:
             m = genai.GenerativeModel(model_name=m_name)
             resp = m.generate_content(prompt, generation_config=gen_config)
             if resp.text:
+                _LAST_WORKING_MODEL = m_name
                 return resp.text
         except Exception as e:
             last_err = e

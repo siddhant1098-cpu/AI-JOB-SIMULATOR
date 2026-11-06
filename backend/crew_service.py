@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def get_gemini_model_name() -> str:
     """Return the configured Gemini model name (defaults to free-tier flash)."""
-    return os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    return os.getenv("GEMINI_MODEL", "gemini-3.5-flash").strip()
 
 def get_crew_llm(temperature: float = 0.4) -> LLM:
     """Instantiate CrewAI LLM configured exclusively for Google Gemini."""

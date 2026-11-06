@@ -118,6 +118,20 @@ export default function SetupForm({
   const [filterDifficulty, setFilterDifficulty] = useState('All');
   const [filterSkill, setFilterSkill] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loadingSeconds, setLoadingSeconds] = useState(0);
+
+  useEffect(() => {
+    let interval;
+    if (isLoading) {
+      setLoadingSeconds(0);
+      interval = setInterval(() => {
+        setLoadingSeconds((s) => s + 1);
+      }, 1000);
+    } else {
+      setLoadingSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   useEffect(() => {
     fetchScenarios().then((res) => {
@@ -830,7 +844,11 @@ Projects:
                         {isLoading ? (
                           <>
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            <span>Synthesizing Scenario for {targetPersonRole}…</span>
+                            <span>
+                              {loadingSeconds > 4
+                                ? `Waking cloud server (${loadingSeconds}s)…`
+                                : `Synthesizing Scenario for ${targetPersonRole}…`}
+                            </span>
                           </>
                         ) : (
                           <>
@@ -1225,7 +1243,11 @@ Projects:
                     {isLoading ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Synthesizing Interview Protocol…</span>
+                        <span>
+                          {loadingSeconds > 4
+                            ? `Waking cloud server (${loadingSeconds}s)…`
+                            : `Synthesizing Interview Protocol…`}
+                        </span>
                       </>
                     ) : (
                       <>
